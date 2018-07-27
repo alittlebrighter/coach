@@ -1,8 +1,0 @@
-syntax = "proto3";
-
-package coach;
-
-message Command {
-    string command = 1;
-    repeated string arguments = 2;
-}

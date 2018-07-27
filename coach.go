@@ -1,19 +1,20 @@
+//go:generate protoc -I protobuf/ --go_out=plugins=grpc:gen/models protobuf/coach.proto
 package coach
 
 import (
-	"fmt"
-
+	"github.com/alittlebrighter/coach/gen/models"
 	"github.com/alittlebrighter/coach/platforms/linux"
-	"github.com/alittlebrighter/coach/types"
 )
 
-type CommandFetcher func(uint) ([]types.Cmd, error)
+type (
+	CommandFetcher func(uint) ([]models.Command, error)
+	HistoryParser  func(string) (*models.Command, error)
+)
 
-var fetch CommandFetcher
-
-type HistoryParser func(string) (*types.Cmd, error)
-
-var historyParser HistoryParser
+var (
+	fetch         CommandFetcher
+	historyParser HistoryParser
+)
 
 func init() {
 	// only supporting bash on linux so only one option for fetcher
@@ -21,12 +22,11 @@ func init() {
 	historyParser = linux.ParseHistory
 }
 
-func LastCommands(n uint) (*types.Cmd, error) {
+func LastCommands(n uint) (*models.Command, error) {
 	cmds, err := fetch(n)
 	return &cmds[0], err
 }
 
-func ParseHistory(historyOut string) (*types.Cmd, error) {
-	fmt.Println("history output arg:", historyOut)
+func ParseHistory(historyOut string) (*models.Command, error) {
 	return historyParser(historyOut)
 }
