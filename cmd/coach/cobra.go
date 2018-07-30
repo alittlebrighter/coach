@@ -50,15 +50,37 @@ func main() {
 		Run:   history(),
 	}
 	historyCmd.Flags().BoolP("record", "r", false, "Record command.")
-	historyCmd.Flags().StringP("ignore", "i", "", "Ignore history line ID (last command if blank).")
 
 	docCmd := &cobra.Command{
-		Use:   "doc",
-		Short: "Save commands with tags and documentation.",
-		Run:   doc,
+		Use:     "doc",
+		Short:   "Save and query commands with tags and documentation.  Default is to document the most recent command.",
+		Example: "coach doc [alias] [tags] [comment] # empty alias represented by \"\", tag list must be quoted if it contains spaces",
+		Run:     doc,
 	}
+	docCmd.Flags().StringP("query", "q", "", "Query your saved commands by tags.")
+	docCmd.Flags().StringP("cmd", "c", "", "Quoted command that you would like to document and save.")
 
-	rootCmd.AddCommand(sessionCmd, historyCmd, docCmd)
+	ignoreCmd := &cobra.Command{
+		Use:   "ignore",
+		Short: "Ignore this command when scanning for duplicates to prompt for documentation.  Defaults to the last run command.",
+		Run:   ignore,
+	}
+	ignoreCmd.Flags().BoolP("remove", "r", false, "Remove a command from the ignore list.")
+
+	runCmd := &cobra.Command{
+		Use:   "run",
+		Short: "Run a saved and documented command referenced by alias.",
+		Run:   run,
+	}
+	runCmd.Flags().BoolP("confirm", "c", false, "Run the command immediately without review.")
+
+	rootCmd.AddCommand(
+		sessionCmd,
+		historyCmd,
+		docCmd,
+		ignoreCmd,
+		runCmd,
+	)
 
 	cobra.OnInitialize(initConfig)
 
@@ -74,7 +96,7 @@ func initConfig() {
 	viper.SetDefault("history.maxlines", 1000)
 	viper.SetDefault("history.reps-pre-doc-prompt", 3)
 
-	viper.AddConfigPath(home)
+	viper.AddConfigPath(home + "/.coach")
 	viper.SetConfigName("config")
 
 	viper.SetEnvPrefix("coach")

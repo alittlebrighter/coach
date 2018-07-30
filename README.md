@@ -14,9 +14,6 @@ PROMPT_COMMAND=prompt
 ```
 
 TODO:
-- [x] record commands
-- [x] retrieve history
 - [ ] intelligently parse commands (split commands joined with &&/;, group arguments surrounded by quotes/parenteses, etc.)
-- [ ] add ignore command 
-- [ ] implement doc command
-- [ ] implement run command
+- [ ] add ability to interactively add arguments to commands when run
+- [ ] record the directory that a command was run from
