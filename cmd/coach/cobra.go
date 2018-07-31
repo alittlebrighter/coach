@@ -1,3 +1,6 @@
+// Copyright (c) 2018, Adam Bright <brightam1@gmail.com>
+// See LICENSE for licensing information
+
 package main
 
 import (
@@ -34,16 +37,16 @@ func main() {
 
 	rootCmd := &cobra.Command{
 		Use:   "coach",
-		Short: "A tool to help you build and document tasks performed on the command line.",
+		Short: "A tool to help you save and document common commands executed on the command line.",
 		Run:   appMain,
 	}
-
-	sessionCmd := &cobra.Command{
-		Use:   "session",
-		Short: "Initialize a terminal session",
-		Run:   session,
-	}
-
+	/*
+		sessionCmd := &cobra.Command{
+			Use:   "session",
+			Short: "Initialize a terminal session",
+			Run:   session,
+		}
+	*/
 	historyCmd := &cobra.Command{
 		Use:   "history",
 		Short: "Store and query command history.",
@@ -58,7 +61,7 @@ func main() {
 		Run:     doc,
 	}
 	docCmd.Flags().StringP("query", "q", "", "Query your saved commands by tags.")
-	docCmd.Flags().StringP("cmd", "c", "", "Quoted command that you would like to document and save.")
+	docCmd.Flags().StringP("script", "s", "", "Quoted command that you would like to document and save.")
 
 	ignoreCmd := &cobra.Command{
 		Use:   "ignore",
@@ -75,7 +78,7 @@ func main() {
 	runCmd.Flags().BoolP("confirm", "c", false, "Run the command immediately without review.")
 
 	rootCmd.AddCommand(
-		sessionCmd,
+		//	sessionCmd,
 		historyCmd,
 		docCmd,
 		ignoreCmd,

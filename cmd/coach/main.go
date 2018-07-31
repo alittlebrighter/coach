@@ -1,3 +1,6 @@
+// Copyright (c) 2018, Adam Bright <brightam1@gmail.com>
+// See LICENSE for licensing information
+
 package main
 
 import (
@@ -21,6 +24,7 @@ import (
 
 func appMain(cmd *cobra.Command, args []string) {
 	cmd.Help()
+	fmt.Println("\nAuthor: Adam Bright <brightam1@gmail.com>")
 }
 
 func session(cmd *cobra.Command, args []string) {

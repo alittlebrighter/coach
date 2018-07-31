@@ -1,10 +1,12 @@
-## Coach
+## Coach (alpha)
 
-Coach is a tool to help you build a queryable library of documented scripts for everything you do on the command line.  Coach records your terminal sessions and prompts you to save and document any commands/groups of commands that are run multiple times.  This allows you to tag and write documentation for your scripts while you are in the right context.  Once you have a library built, you (or your coworkers) can search for scripts and save time reading man pages or a trip to StackOverflow.  
+Coach helps you document Ops processes by recording all of your commands and prompting you to save an alias and document frequently run commands.  This 
+documentation can then be queried later on the command line.
 
-You have a vocabulary that you prefer when doing your work but the tools you have to use don't necessarily operate with the same vocabulary.  When you have to look up how to do whatever you're trying to do you know you should save a script so you don't have to go through the research hassle again but usually once the job is accomplished it's on to the next task and you end up looking up the task again and again.  Coach prompts you to save and document these tasks in the moment so you can document and save the script while you are thinking about it.
+### Install
+`go get -u github.com/alittlebrighter/coach/cmd/coach`
 
-To use `coach` add the following to your .bashrc file: 
+To use `coach` to monitor your command line usage, add the following to your `.bashrc` file: 
 ```
 function prompt {
     coach history --record "$(history 1)"
@@ -12,8 +14,17 @@ function prompt {
 
 PROMPT_COMMAND=prompt
 ```
+Run `coach --help` to see available options. 
 
-TODO:
-- [ ] intelligently parse commands (split commands joined with &&/;, group arguments surrounded by quotes/parenteses, etc.)
-- [ ] add ability to add arguments to commands to be defined at runtime
-- [ ] record the directory that a command was run from
+### Notes
+This is an alpha quality WIP.  Try it out,  submit an issue and/or PR if you see room for improvement.
+
+Only works with `bash` at the moment, more support coming.
+
+### Contributing
+
+1. Fork it
+2. Create your feature branch (git checkout -b my-new-feature)
+3. Commit your changes (git commit -am 'Added some feature')
+4. Push to the branch (git push origin my-new-feature)
+5. Create new Pull Request
