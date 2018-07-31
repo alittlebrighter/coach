@@ -6,9 +6,9 @@ option go_package = "models";
 
 import "google/protobuf/timestamp.proto";
 
-message Command {
-    string command = 1;
-    repeated string arguments = 2;
+message Script {
+    string content = 1;
+    repeated string variables = 2;
 }
 
 message HistoryRecord {
@@ -18,12 +18,12 @@ message HistoryRecord {
     google.protobuf.Timestamp timestamp = 4;
 }
 
-message SavedCommand {
+message DocumentedScript {
     bytes id = 1;
-    repeated Command command = 2;
+    Script script = 2;
     string alias = 3;
     repeated string tags = 4;
-    string comment = 5;
+    string documentation = 5;
 }
 
 message CommandContext {

@@ -3,7 +3,6 @@ package database
 import (
 	"errors"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/buger/jsonparser"
@@ -59,15 +58,6 @@ func (b *BoltDB) initDB() error {
 	})
 }
 
-func (d *BoltDB) SaveHistory(c *models.HistoryRecord) (err error) {
-	if c.Id == nil || len(c.Id) == 0 {
-		c.Id = xid.New().Bytes()
-	}
-	return d.db.Update(func(tx *bolt.Tx) error {
-		return saveToBucket(tx, HistoryBucket, c)
-	})
-}
-
 func (b *BoltDB) CheckDupeCmds(command string, count int) (countReached bool) {
 	b.db.View(func(tx *bolt.Tx) error {
 		if shouldIgnore(tx, command) {
@@ -90,7 +80,7 @@ func (b *BoltDB) CheckDupeCmds(command string, count int) (countReached bool) {
 	return
 }
 
-// GetRecent retrieves the last count (arg) lines of history
+// GetRecent retrieves the last count (arg) lines of history from specified tty (arg).
 func (b *BoltDB) GetRecent(tty string, count int) ([]models.HistoryRecord, error) {
 	records := []models.HistoryRecord{}
 	b.db.View(func(tx *bolt.Tx) error {
@@ -118,34 +108,8 @@ func (b *BoltDB) GetRecent(tty string, count int) ([]models.HistoryRecord, error
 	return records, nil
 }
 
-func (b *BoltDB) SaveDoc(sc *models.SavedCommand) (err error) {
-	if sc.GetCommand() == nil || len(sc.GetCommand()) == 0 {
-		return errors.New("no command attached to docs")
-	}
-
-	switch {
-	case len(sc.Alias) > 0:
-		sc.Id = []byte(sc.Alias)
-	case sc.Id == nil || len(sc.Id) == 0:
-		sc.Id = xid.New().Bytes()
-	}
-
-	err = b.db.Update(func(tx *bolt.Tx) error {
-		err := saveToBucket(tx, SavedCmdsBucket, sc)
-		if err != nil {
-			return err
-		}
-		for _, command := range sc.GetCommand() {
-			fullCommand := strings.Join(append([]string{command.GetCommand()}, command.GetArguments()...), " ")
-			err = ignoreCommand(tx, fullCommand)
-		}
-		return err
-	})
-	return
-}
-
-func (b *BoltDB) QueryDoc(tags ...string) ([]models.SavedCommand, error) {
-	cmds := []models.SavedCommand{}
+func (b *BoltDB) QueryScripts(tags ...string) ([]models.DocumentedScript, error) {
+	cmds := []models.DocumentedScript{}
 	if len(tags) == 0 {
 		return cmds, nil
 	}
@@ -155,7 +119,7 @@ func (b *BoltDB) QueryDoc(tags ...string) ([]models.SavedCommand, error) {
 
 		for k, v := c.First(); k != nil; k, v = c.Next() {
 			// this is an ugly abuse of scoping rules
-			var savedCmd models.SavedCommand
+			var savedCmd models.DocumentedScript
 			skip := false
 			jsonparser.ArrayEach(v, func(value []byte, dataType jsonparser.ValueType, offset int, err error) {
 				if skip {
@@ -180,7 +144,7 @@ func (b *BoltDB) QueryDoc(tags ...string) ([]models.SavedCommand, error) {
 	return cmds, err
 }
 
-func (b *BoltDB) GetSavedCmd(alias string) (command *models.SavedCommand) {
+func (b *BoltDB) GetScript(alias string) (command *models.DocumentedScript) {
 	b.db.View(func(tx *bolt.Tx) error {
 		cmdData := tx.Bucket(SavedCmdsBucket).Get([]byte(alias))
 		if cmdData == nil || len(cmdData) == 0 {
@@ -222,14 +186,29 @@ func shouldIgnore(tx *bolt.Tx, command string) (yes bool) {
 	return
 }
 
-func saveToBucket(tx *bolt.Tx, bucket []byte, val HasId) error {
+func (b *BoltDB) Save(id []byte, instance interface{}) (err error) {
+	var bucket []byte
+	switch instance.(type) {
+	case models.HistoryRecord:
+		bucket = HistoryBucket
+	case models.DocumentedScript:
+		bucket = SavedCmdsBucket
+	default:
+		bucket = IgnoreBucket
+	}
+
+	if id == nil || len(id) == 0 {
+		id = xid.New().Bytes()
+	}
+	return b.db.Update(func(tx *bolt.Tx) error {
+		return saveToBucket(tx, bucket, id, instance)
+	})
+}
+
+func saveToBucket(tx *bolt.Tx, bucket []byte, id []byte, val interface{}) error {
 	data, err := json.Marshal(val)
 	if err != nil {
 		return err
 	}
-	return tx.Bucket(bucket).Put(val.GetId(), data)
-}
-
-type HasId interface {
-	GetId() []byte
+	return tx.Bucket(bucket).Put(id, data)
 }

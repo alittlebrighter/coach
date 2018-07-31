@@ -15,5 +15,5 @@ PROMPT_COMMAND=prompt
 
 TODO:
 - [ ] intelligently parse commands (split commands joined with &&/;, group arguments surrounded by quotes/parenteses, etc.)
-- [ ] add ability to interactively add arguments to commands when run
+- [ ] add ability to add arguments to commands to be defined at runtime
 - [ ] record the directory that a command was run from
