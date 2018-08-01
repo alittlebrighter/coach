@@ -1,7 +1,7 @@
 // Copyright (c) 2018, Adam Bright <brightam1@gmail.com>
 // See LICENSE for licensing information
 
-package coach
+package platforms
 
 import (
 	"testing"

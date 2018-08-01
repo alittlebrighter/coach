@@ -1,4 +1,4 @@
-## Coach
+## Coach [![Build Status](https://travis-ci.org/alittlebrighter/coach.svg?branch=master)](http://travis-ci.org/alittlebrighter/coach)
 
 Coach helps you document Ops processes by recording all of your commands and prompting you to save an alias and document frequently run commands.  This 
 documentation can then be queried later on the command line.
