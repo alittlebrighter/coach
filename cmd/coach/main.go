@@ -31,10 +31,10 @@ func session(cmd *cobra.Command, args []string) {
 }
 
 func history(cmd *cobra.Command, args []string) {
-	record, rErr := cmd.Flags().GetBool("record")
+	record, rErr := cmd.Flags().GetString("record")
 
 	switch {
-	case rErr == nil && record:
+	case rErr == nil && len(record) > 0:
 		store, err := database.NewBoltDB(dbpath, false)
 		if err != nil {
 			handleErr(err)
@@ -42,16 +42,9 @@ func history(cmd *cobra.Command, args []string) {
 		}
 		defer store.Close()
 
-		var historyOutput string
-		if args != nil && len(args) > 0 {
-			historyOutput = args[0]
-		} else if lines, err := coach.Shell.History(1); err != nil && len(lines) > 0 {
-			historyOutput = lines[0]
-		}
-
 		dupeCount := viper.GetInt("history.reps-pre-doc-prompt")
 
-		if enoughDupes, _ := coach.SaveHistory(historyOutput, dupeCount, store); enoughDupes {
+		if enoughDupes, _ := coach.SaveHistory(record, dupeCount, store); enoughDupes {
 			fmt.Printf("This command has been used %d+ times.\nRun `coach doc [alias] [tags] [comment]` to document this command.\n",
 				dupeCount)
 		}

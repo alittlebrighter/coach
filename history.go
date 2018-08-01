@@ -5,7 +5,6 @@ package coach
 
 import (
 	"errors"
-	"fmt"
 	"strings"
 
 	"github.com/golang/protobuf/ptypes"
@@ -19,7 +18,6 @@ func SaveHistory(line string, dupeCount int, store HistoryStore) (promptDoc bool
 	cmd := platforms.CleanupCommand(line)
 	if len(cmd) == 0 {
 		if lines, err := Shell.History(1); err == nil && len(lines) > 0 {
-			fmt.Println(lines[0])
 			cmd = lines[0]
 		}
 	}

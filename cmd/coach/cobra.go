@@ -52,7 +52,7 @@ func main() {
 		Short: "Store and query command history.",
 		Run:   history,
 	}
-	historyCmd.Flags().BoolP("record", "r", false, "Record command.")
+	historyCmd.Flags().StringP("record", "r", "", "Record command.  With `bash` you can use \"$(history 1)\"")
 
 	docCmd := &cobra.Command{
 		Use:     "doc",
