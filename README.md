@@ -9,7 +9,7 @@ documentation can then be queried later on the command line.
 To use `coach` to monitor your command line usage, add the following to your `.bashrc` file: 
 ```
 function prompt {
-    coach history --record
+    coach history --record "$(history 1)" # you do actually need this
 }
 
 PROMPT_COMMAND=prompt
