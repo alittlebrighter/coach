@@ -114,9 +114,12 @@ func (b *BoltDB) PruneHistory(max int) error {
 		c := tx.Bucket(HistoryBucket).Cursor()
 
 		for k, _ := c.First(); diff > 0 || k != nil; k, _ = c.Next() {
-			tx.Bucket(HistoryBucket).Delete(k)
+			if err := tx.Bucket(HistoryBucket).Delete(k); err != nil {
+				return err
+			}
 			diff--
 		}
+		return nil
 	})
 }
 
