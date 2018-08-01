@@ -5,7 +5,6 @@ package main
 
 import (
 	"bufio"
-	"encoding/csv"
 	"fmt"
 	"os"
 	"os/exec"
@@ -45,8 +44,10 @@ func history() func(cmd *cobra.Command, args []string) {
 			defer store.Close()
 
 			var historyOutput string
-			if args != nil || len(args) > 0 {
+			if args != nil && len(args) > 0 {
 				historyOutput = args[0]
+			} else if lines, err := coach.Shell.History(1); err != nil && len(lines) > 0 {
+				historyOutput = lines[0]
 			}
 
 			dupeCount := viper.GetInt("history.reps-pre-doc-prompt")
@@ -87,6 +88,8 @@ func history() func(cmd *cobra.Command, args []string) {
 func doc(cmd *cobra.Command, args []string) {
 	query, qErr := cmd.Flags().GetString("query")
 	script, cErr := cmd.Flags().GetString("cmd")
+	edit, eErr := cmd.Flags().GetString("edit")
+	hLines, _ := cmd.Flags().GetInt("history")
 
 	switch {
 	case qErr == nil && len(query) > 0:
@@ -108,14 +111,29 @@ func doc(cmd *cobra.Command, args []string) {
 				continue
 			}
 
+			scriptStr := sCmd.GetScript().GetContent()
+			if len(scriptStr) > 21 {
+				scriptStr = scriptStr[:21] + "..."
+			}
 			fmt.Printf("%14s: %s\n%14s: %s\n%14s: %s\n%14s: %s\n---\n",
-				"Script", sCmd.GetScript().GetContent(),
+				"Script", scriptStr,
 				"Alias", sCmd.GetAlias(),
 				"Tags", strings.Join(sCmd.GetTags(), ","),
 				"Documentation", sCmd.GetDocumentation(),
 			)
 		}
+	case eErr == nil && len(edit) > 0:
+		store, err := database.NewBoltDB(dbpath, false)
+		if err != nil {
+			handleErr(err)
+			return
+		}
+		defer store.Close()
 
+		if err := coach.EditScript(edit, store); err != nil {
+			handleErr(err)
+		}
+		return
 	case len(args) >= 3:
 		store, err := database.NewBoltDB(dbpath, false)
 		if err != nil {
@@ -125,8 +143,10 @@ func doc(cmd *cobra.Command, args []string) {
 		defer store.Close()
 
 		if cErr != nil || len(script) == 0 {
-			if hLines, err := coach.GetRecentHistory(1, store); err == nil && len(hLines) > 0 {
-				script = hLines[0].GetFullCommand()
+			if lines, err := coach.GetRecentHistory(hLines, store); err == nil && len(lines) > 0 {
+				for _, line := range lines {
+					script += line.GetFullCommand() + "\n"
+				}
 			}
 		}
 
@@ -177,7 +197,11 @@ func run(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	fmt.Printf("Command '%s' found:\n# %s\n%s\n", toRun.GetAlias(), toRun.GetDocumentation(), toRun.GetScript().GetContent())
+	scriptStr := toRun.GetScript().GetContent()
+	if len(scriptStr) > 21 {
+		scriptStr = scriptStr[:21] + "..."
+	}
+	fmt.Printf("Command '%s' found:\n# %s\n%s\n", toRun.GetAlias(), toRun.GetDocumentation(), scriptStr)
 
 	if confirmed, cErr := cmd.Flags().GetBool("confirm"); cErr == nil && confirmed {
 		fmt.Println("Running now...")
@@ -212,11 +236,4 @@ func handleErr(e error) {
 	if e != nil {
 		fmt.Println("ERROR:", e)
 	}
-}
-
-func readTags(val string) []string {
-	stringReader := strings.NewReader(val)
-	csvReader := csv.NewReader(stringReader)
-	tags, _ := csvReader.Read()
-	return tags
 }

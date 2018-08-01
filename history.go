@@ -5,9 +5,11 @@ package coach
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 
 	"github.com/golang/protobuf/ptypes"
+	"github.com/spf13/viper"
 
 	"github.com/alittlebrighter/coach/gen/models"
 	"github.com/alittlebrighter/coach/platforms"
@@ -17,6 +19,7 @@ func SaveHistory(line string, dupeCount int, store HistoryStore) (promptDoc bool
 	cmd := platforms.CleanupCommand(line)
 	if len(cmd) == 0 {
 		if lines, err := Shell.History(1); err == nil && len(lines) > 0 {
+			fmt.Println(lines[0])
 			cmd = lines[0]
 		}
 	}
@@ -42,6 +45,7 @@ func SaveHistory(line string, dupeCount int, store HistoryStore) (promptDoc bool
 	}
 
 	err = store.Save(hLine.GetId(), hLine)
+	store.PruneHistory(viper.GetInt("history.maxlines"))
 
 	promptDoc = <-enoughDupes
 
@@ -61,4 +65,5 @@ type HistoryStore interface {
 	Save(id []byte, value interface{}) error
 	CheckDupeCmds(string, int) bool
 	GetRecent(tty string, n int) ([]models.HistoryRecord, error)
+	PruneHistory(max int) error
 }

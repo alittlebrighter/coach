@@ -5,11 +5,12 @@ package coach
 
 import (
 	"errors"
+	"fmt"
+	"io/ioutil"
 	"os"
 	"strings"
 
 	"github.com/alittlebrighter/coach/gen/models"
-	"github.com/alittlebrighter/coach/platforms"
 )
 
 func QueryScripts(query string, store ScriptStore) (scripts []models.DocumentedScript, err error) {
@@ -33,7 +34,7 @@ func SaveScript(alias string, tags []string, documentation string, script string
 		Documentation: documentation,
 
 		// TODO: parse variables out of script
-		Script: &models.Script{Content: platforms.CleanupCommand(script)},
+		Script: &models.Script{Content: script},
 	}
 
 	if len(toSave.GetAlias()) > 0 {
@@ -52,6 +53,47 @@ func SaveScript(alias string, tags []string, documentation string, script string
 	return
 }
 
+func EditScript(alias string, store ScriptStore) error {
+	script := store.GetScript(alias)
+	if script == nil {
+		return errors.New("notfound")
+	}
+
+	tmpfile, ferr := ioutil.TempFile("", "coach")
+	if ferr != nil {
+		return ferr
+	}
+	var err error
+	defer func() {
+		if err == nil {
+			os.Remove(tmpfile.Name()) // clean up
+		} else {
+			fmt.Println("There was an issue saving your edited script to the database.\nYou can find your draft here:", tmpfile.Name())
+		}
+	}()
+
+	if _, err := tmpfile.Write([]byte(script.GetScript().GetContent())); err != nil {
+		return err
+	}
+	if err := tmpfile.Close(); err != nil {
+		return err
+	}
+
+	if err := Shell.OpenEditor(tmpfile.Name()); err != nil {
+		return err
+	}
+	newContents, err := ioutil.ReadFile(tmpfile.Name())
+	if err != nil {
+		return err
+	}
+
+	script.Script.Content = string(newContents)
+	if err := store.Save(script.GetId(), *script); err != nil {
+		return err
+	}
+	return nil
+}
+
 func RunScript(script models.DocumentedScript) error {
 	toRun := Shell.BuildCommand(script.GetScript().GetContent())
 	toRun.Stdin = os.Stdin
@@ -64,6 +106,7 @@ func RunScript(script models.DocumentedScript) error {
 
 type ScriptStore interface {
 	Save(id []byte, value interface{}) error
+	GetScript(alias string) *models.DocumentedScript
 	QueryScripts(...string) ([]models.DocumentedScript, error)
 	IgnoreCommand(string) error
 }

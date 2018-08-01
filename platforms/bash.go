@@ -5,10 +5,13 @@ package platforms
 
 import (
 	"bytes"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"strconv"
 	"strings"
+
+	"github.com/rs/xid"
 )
 
 type Shell interface {
@@ -16,6 +19,8 @@ type Shell interface {
 	GetTTY() string
 	GetPWD() string
 	BuildCommand(script string) *exec.Cmd
+	CreateTmpFile(contents []byte) (string, error)
+	OpenEditor(filepath string) error
 }
 
 func CleanupCommand(cmd string) (clean string) {
@@ -40,6 +45,7 @@ type Bash struct{}
 func (b *Bash) History(lineCount int) (lines []string, err error) {
 	output := bytes.NewBuffer([]byte{})
 	historyCmd := exec.Command("history", strconv.Itoa(lineCount))
+	historyCmd.Stdin = os.Stdin
 	historyCmd.Stdout = output
 	historyCmd.Run()
 
@@ -63,4 +69,17 @@ func (b *Bash) GetPWD() string {
 
 func (b *Bash) BuildCommand(script string) *exec.Cmd {
 	return exec.Command("bash", "-c", "( "+script+" )")
+}
+
+func (b *Bash) CreateTmpFile(contents []byte) (string, error) {
+	filename := "/tmp/coach-" + xid.New().String() + ".sh"
+	return filename, ioutil.WriteFile(filename, contents, 0600)
+}
+
+func (b *Bash) OpenEditor(filename string) error {
+	editor := os.Getenv("EDITOR")
+	if len(editor) == 0 {
+		editor = "nano"
+	}
+	return exec.Command(editor, filename).Run()
 }

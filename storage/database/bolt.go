@@ -9,12 +9,9 @@ import (
 	"time"
 
 	"github.com/buger/jsonparser"
-
 	bolt "github.com/coreos/bbolt"
-	"github.com/rs/xid"
-
-	// "github.com/buger/jsonparser" // for queries
 	"github.com/json-iterator/go" // for full (de)serialization
+	"github.com/rs/xid"
 
 	"github.com/alittlebrighter/coach/gen/models"
 )
@@ -109,6 +106,18 @@ func (b *BoltDB) GetRecent(tty string, count int) ([]models.HistoryRecord, error
 	})
 
 	return records, nil
+}
+
+func (b *BoltDB) PruneHistory(max int) error {
+	return b.db.Update(func(tx *bolt.Tx) error {
+		diff := tx.Bucket(HistoryBucket).Stats().KeyN - max
+		c := tx.Bucket(HistoryBucket).Cursor()
+
+		for k, _ := c.First(); diff > 0 || k != nil; k, _ = c.Next() {
+			tx.Bucket(HistoryBucket).Delete(k)
+			diff--
+		}
+	})
 }
 
 func (b *BoltDB) QueryScripts(tags ...string) ([]models.DocumentedScript, error) {
