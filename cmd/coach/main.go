@@ -30,57 +30,55 @@ func session(cmd *cobra.Command, args []string) {
 
 }
 
-func history() func(cmd *cobra.Command, args []string) {
-	return func(cmd *cobra.Command, args []string) {
-		record, rErr := cmd.Flags().GetBool("record")
+func history(cmd *cobra.Command, args []string) {
+	record, rErr := cmd.Flags().GetBool("record")
 
-		switch {
-		case rErr == nil && record:
-			store, err := database.NewBoltDB(dbpath, false)
-			if err != nil {
-				handleErr(err)
-				return
-			}
-			defer store.Close()
+	switch {
+	case rErr == nil && record:
+		store, err := database.NewBoltDB(dbpath, false)
+		if err != nil {
+			handleErr(err)
+			return
+		}
+		defer store.Close()
 
-			var historyOutput string
-			if args != nil && len(args) > 0 {
-				historyOutput = args[0]
-			} else if lines, err := coach.Shell.History(1); err != nil && len(lines) > 0 {
-				historyOutput = lines[0]
-			}
+		var historyOutput string
+		if args != nil && len(args) > 0 {
+			historyOutput = args[0]
+		} else if lines, err := coach.Shell.History(1); err != nil && len(lines) > 0 {
+			historyOutput = lines[0]
+		}
 
-			dupeCount := viper.GetInt("history.reps-pre-doc-prompt")
+		dupeCount := viper.GetInt("history.reps-pre-doc-prompt")
 
-			if enoughDupes, _ := coach.SaveHistory(historyOutput, dupeCount, store); enoughDupes {
-				fmt.Printf("This command has been used %d+ times.\nRun `coach doc [alias] [tags] [comment]` to document this command.\n",
-					dupeCount)
-			}
-		default:
-			store, err := database.NewBoltDB(dbpath, true)
-			if err != nil {
-				handleErr(err)
-				return
-			}
-			defer store.Close()
+		if enoughDupes, _ := coach.SaveHistory(historyOutput, dupeCount, store); enoughDupes {
+			fmt.Printf("This command has been used %d+ times.\nRun `coach doc [alias] [tags] [comment]` to document this command.\n",
+				dupeCount)
+		}
+	default:
+		store, err := database.NewBoltDB(dbpath, true)
+		if err != nil {
+			handleErr(err)
+			return
+		}
+		defer store.Close()
 
-			count := 10
-			if args != nil && len(args) >= 1 {
-				if count, err = strconv.Atoi(args[0]); err != nil {
-					count = 10
-				}
+		count := 10
+		if args != nil && len(args) >= 1 {
+			if count, err = strconv.Atoi(args[0]); err != nil {
+				count = 10
 			}
-			lines, err := coach.GetRecentHistory(count, store)
-			if err != nil {
-				fmt.Println("Could not retrieve history for this session!  ERROR:", err)
-				break
-			}
+		}
+		lines, err := coach.GetRecentHistory(count, store)
+		if err != nil {
+			fmt.Println("Could not retrieve history for this session!  ERROR:", err)
+			break
+		}
 
-			for _, line := range lines {
-				id, _ := xid.FromBytes(line.GetId())
-				fmt.Printf("%s %s - %s\n", id.Time().Format(time.RFC3339), id.String(),
-					line.GetFullCommand())
-			}
+		for _, line := range lines {
+			id, _ := xid.FromBytes(line.GetId())
+			fmt.Printf("%s %s - %s\n", id.Time().Format(time.RFC3339), id.String(),
+				line.GetFullCommand())
 		}
 	}
 }

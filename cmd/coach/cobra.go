@@ -50,7 +50,7 @@ func main() {
 	historyCmd := &cobra.Command{
 		Use:   "history",
 		Short: "Store and query command history.",
-		Run:   history(),
+		Run:   history,
 	}
 	historyCmd.Flags().BoolP("record", "r", false, "Record command.")
 
