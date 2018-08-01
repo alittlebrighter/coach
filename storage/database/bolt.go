@@ -109,11 +109,15 @@ func (b *BoltDB) GetRecent(tty string, count int) ([]models.HistoryRecord, error
 }
 
 func (b *BoltDB) PruneHistory(max int) error {
+	if max < 1 {
+		return errors.New("invalid max value")
+	}
 	return b.db.Update(func(tx *bolt.Tx) error {
 		diff := tx.Bucket(HistoryBucket).Stats().KeyN - max
+
 		c := tx.Bucket(HistoryBucket).Cursor()
 
-		for k, _ := c.First(); diff > 0 || k != nil; k, _ = c.Next() {
+		for k, _ := c.First(); diff > 0; k, _ = c.Next() {
 			if err := tx.Bucket(HistoryBucket).Delete(k); err != nil {
 				return err
 			}
