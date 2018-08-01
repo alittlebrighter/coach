@@ -81,5 +81,7 @@ func (b *Bash) OpenEditor(filename string) error {
 	if len(editor) == 0 {
 		editor = "nano"
 	}
-	return exec.Command(editor, filename).Run()
+	cmd := exec.Command(editor, filename)
+	cmd.Stdin, cmd.Stdout, cmd.Stderr = os.Stdin, os.Stdout, os.Stderr
+	return cmd.Run()
 }
