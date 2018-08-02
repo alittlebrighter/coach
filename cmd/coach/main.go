@@ -182,7 +182,7 @@ func run(cmd *cobra.Command, args []string) {
 	}
 	defer store.Close()
 
-	toRun := store.GetScript(args[0])
+	toRun := store.GetScript([]byte(args[0]))
 	if toRun == nil {
 		fmt.Println("No script found by that alias.")
 		return
@@ -192,7 +192,7 @@ func run(cmd *cobra.Command, args []string) {
 	if len(scriptStr) > 21 {
 		scriptStr = scriptStr[:21] + "..."
 	}
-	fmt.Printf("Command '%s' found:\n# %s\n%s\n", toRun.GetAlias(), toRun.GetDocumentation(), scriptStr)
+	fmt.Printf("Command '%s' found:\n###\n%s\n###\n%s\n", toRun.GetAlias(), toRun.GetDocumentation(), scriptStr)
 
 	if confirmed, cErr := cmd.Flags().GetBool("confirm"); cErr == nil && confirmed {
 		fmt.Println("Running now...")

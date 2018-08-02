@@ -5,7 +5,6 @@ package database
 
 import (
 	"errors"
-	"fmt"
 	"time"
 
 	"github.com/buger/jsonparser"
@@ -163,17 +162,22 @@ func (b *BoltDB) QueryScripts(tags ...string) ([]models.DocumentedScript, error)
 	return cmds, err
 }
 
-func (b *BoltDB) GetScript(alias string) (command *models.DocumentedScript) {
+func (b *BoltDB) GetScript(alias []byte) (command *models.DocumentedScript) {
 	b.db.View(func(tx *bolt.Tx) error {
-		cmdData := tx.Bucket(SavedCmdsBucket).Get([]byte(alias))
+		cmdData := tx.Bucket(SavedCmdsBucket).Get(alias)
 		if cmdData == nil || len(cmdData) == 0 {
-			fmt.Println("alias not found")
 			return errors.New("not found")
 		}
 
 		return json.Unmarshal(cmdData, &command)
 	})
 	return
+}
+
+func (b *BoltDB) DeleteScript(alias []byte) error {
+	return b.db.Update(func(tx *bolt.Tx) error {
+		return tx.Bucket(SavedCmdsBucket).Delete(alias)
+	})
 }
 
 func (b *BoltDB) IgnoreCommand(command string) (err error) {

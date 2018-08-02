@@ -54,9 +54,9 @@ func SaveScript(alias string, tags []string, documentation string, script string
 }
 
 func EditScript(alias string, store ScriptStore) error {
-	script := store.GetScript(alias)
+	script := store.GetScript([]byte(alias))
 	if script == nil {
-		return errors.New("notfound")
+		return errors.New("not found")
 	}
 
 	tmpfile, ferr := ioutil.TempFile("", "coach")
@@ -72,7 +72,7 @@ func EditScript(alias string, store ScriptStore) error {
 		}
 	}()
 
-	if _, err := tmpfile.Write([]byte(script.GetScript().GetContent())); err != nil {
+	if _, err := tmpfile.Write(MarshalEdit(*script)); err != nil {
 		return err
 	}
 	if err := tmpfile.Close(); err != nil {
@@ -87,8 +87,18 @@ func EditScript(alias string, store ScriptStore) error {
 		return err
 	}
 
-	script.Script.Content = string(newContents)
-	if err := store.Save(script.GetId(), *script); err != nil {
+	var newScript models.DocumentedScript
+	if newScript, err = UnmarshalEdit(string(newContents)); err != nil {
+		return err
+	}
+	if len(newScript.GetAlias()) == 0 {
+		newScript.Alias = string(RandomID())
+	}
+	newScript.Id = []byte(newScript.GetAlias())
+	if newScript.GetAlias() != script.GetAlias() {
+		store.DeleteScript(script.GetId())
+	}
+	if err := store.Save(newScript.GetId(), newScript); err != nil {
 		return err
 	}
 	return nil
@@ -106,7 +116,74 @@ func RunScript(script models.DocumentedScript) error {
 
 type ScriptStore interface {
 	Save(id []byte, value interface{}) error
-	GetScript(alias string) *models.DocumentedScript
+	GetScript(id []byte) *models.DocumentedScript
 	QueryScripts(...string) ([]models.DocumentedScript, error)
+	DeleteScript(id []byte) error
 	IgnoreCommand(string) error
+}
+
+const doNotEditLine = "!DO NOT EDIT THIS LINE!"
+
+func MarshalEdit(s models.DocumentedScript) []byte {
+	var contents strings.Builder
+	contents.WriteString("-ALIAS- = " + s.GetAlias() + "\n")
+	contents.WriteString("-TAGS- = " + strings.Join(s.GetTags(), ",") + "\n\n")
+	contents.WriteString("-DOCUMENTATION- " + doNotEditLine + "\n")
+	contents.WriteString(s.GetDocumentation() + "\n\n")
+	contents.WriteString("-SCRIPT- " + doNotEditLine + "\n")
+	contents.WriteString(s.GetScript().GetContent() + "\n")
+	return []byte(contents.String())
+}
+
+func UnmarshalEdit(contents string) (ds models.DocumentedScript, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = errors.New("could not parse file")
+		}
+	}()
+
+	ds.Script = new(models.Script)
+
+	parts := strings.Split(contents, "\n")
+	var inDoc, inScript bool
+	for _, p := range parts {
+		part := strings.TrimSpace(p)
+		if len(part) == 0 {
+			continue
+		}
+
+		switch {
+		case strings.HasPrefix(part, "-ALIAS- ="):
+			ds.Alias = strings.TrimSpace(strings.Split(part, "=")[1])
+
+			inDoc = false
+			inScript = false
+		case strings.HasPrefix(part, "-TAGS- ="):
+			tags := strings.Split(strings.Split(part, "=")[1], ",")
+			for i := range tags {
+				tags[i] = strings.TrimSpace(tags[i])
+			}
+			ds.Tags = tags
+
+			inDoc = false
+			inScript = false
+		case strings.HasPrefix(part, "-DOCUMENTATION-"):
+			inDoc = true
+			inScript = false
+			continue
+		case strings.HasPrefix(part, "-SCRIPT-"):
+			inScript = true
+			inDoc = false
+			continue
+		}
+
+		if inDoc {
+			ds.Documentation = ds.GetDocumentation() + part + "\n"
+		} else if inScript {
+			ds.Script.Content += part + "\n"
+		}
+	}
+	ds.Documentation = strings.TrimSpace(ds.GetDocumentation())
+	ds.Script.Content = strings.TrimSpace(ds.GetScript().GetContent())
+	return
 }
