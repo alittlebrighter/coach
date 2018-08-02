@@ -102,12 +102,8 @@ func doc(cmd *cobra.Command, args []string) {
 				continue
 			}
 
-			scriptStr := sCmd.GetScript().GetContent()
-			if len(scriptStr) > 21 {
-				scriptStr = scriptStr[:21] + "..."
-			}
 			fmt.Printf("%14s: %s\n%14s: %s\n%14s: %s\n%14s: %s\n---\n",
-				"Script", scriptStr,
+				"Script", Slugify(sCmd.GetScript().GetContent(), 48),
 				"Alias", sCmd.GetAlias(),
 				"Tags", strings.Join(sCmd.GetTags(), ","),
 				"Documentation", sCmd.GetDocumentation(),
@@ -188,11 +184,7 @@ func run(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	scriptStr := toRun.GetScript().GetContent()
-	if len(scriptStr) > 21 {
-		scriptStr = scriptStr[:21] + "..."
-	}
-	fmt.Printf("Command '%s' found:\n###\n%s\n###\n%s\n", toRun.GetAlias(), toRun.GetDocumentation(), scriptStr)
+	fmt.Printf("Command '%s' found:\n###\n%s\n###\n$ %s\n\n", toRun.GetAlias(), toRun.GetDocumentation(), Slugify(toRun.GetScript().GetContent(), 48))
 
 	if confirmed, cErr := cmd.Flags().GetBool("confirm"); cErr == nil && confirmed {
 		fmt.Println("Running now...")
@@ -227,4 +219,15 @@ func handleErr(e error) {
 	if e != nil {
 		fmt.Println("ERROR:", e)
 	}
+}
+
+func Slugify(content string, length uint) string {
+	lines := strings.Split(content, "\n")
+	scriptStr := strings.TrimSpace(lines[0])
+	if len(scriptStr) > int(length) {
+		scriptStr = scriptStr[:length] + "..."
+	} else if len(lines) > 1 {
+		scriptStr += "..."
+	}
+	return scriptStr
 }

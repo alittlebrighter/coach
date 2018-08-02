@@ -34,7 +34,7 @@ func SaveScript(alias string, tags []string, documentation string, script string
 		Documentation: documentation,
 
 		// TODO: parse variables out of script
-		Script: &models.Script{Content: script},
+		Script: &models.Script{Content: strings.TrimSpace(script) + "\n"},
 	}
 
 	if len(toSave.GetAlias()) > 0 {
@@ -91,14 +91,13 @@ func EditScript(alias string, store ScriptStore) error {
 	if newScript, err = UnmarshalEdit(string(newContents)); err != nil {
 		return err
 	}
-	if len(newScript.GetAlias()) == 0 {
-		newScript.Alias = string(RandomID())
-	}
+
 	newScript.Id = []byte(newScript.GetAlias())
 	if newScript.GetAlias() != script.GetAlias() {
 		store.DeleteScript(script.GetId())
 	}
-	if err := store.Save(newScript.GetId(), newScript); err != nil {
+	if err := SaveScript(newScript.GetAlias(), newScript.GetTags(), newScript.GetDocumentation(),
+		newScript.GetScript().GetContent(), store); err != nil {
 		return err
 	}
 	return nil
@@ -131,7 +130,7 @@ func MarshalEdit(s models.DocumentedScript) []byte {
 	contents.WriteString("-DOCUMENTATION- " + doNotEditLine + "\n")
 	contents.WriteString(s.GetDocumentation() + "\n\n")
 	contents.WriteString("-SCRIPT- " + doNotEditLine + "\n")
-	contents.WriteString(s.GetScript().GetContent() + "\n")
+	contents.WriteString(s.GetScript().GetContent())
 	return []byte(contents.String())
 }
 
@@ -145,10 +144,10 @@ func UnmarshalEdit(contents string) (ds models.DocumentedScript, err error) {
 	ds.Script = new(models.Script)
 
 	parts := strings.Split(contents, "\n")
-	var inDoc, inScript bool
+	var inDoc, docStarted, inScript, scriptStarted bool
 	for _, p := range parts {
 		part := strings.TrimSpace(p)
-		if len(part) == 0 {
+		if !docStarted && !scriptStarted && len(part) == 0 {
 			continue
 		}
 
@@ -156,8 +155,8 @@ func UnmarshalEdit(contents string) (ds models.DocumentedScript, err error) {
 		case strings.HasPrefix(part, "-ALIAS- ="):
 			ds.Alias = strings.TrimSpace(strings.Split(part, "=")[1])
 
-			inDoc = false
-			inScript = false
+			inDoc, docStarted = false, false
+			inScript, scriptStarted = false, false
 		case strings.HasPrefix(part, "-TAGS- ="):
 			tags := strings.Split(strings.Split(part, "=")[1], ",")
 			for i := range tags {
@@ -165,25 +164,29 @@ func UnmarshalEdit(contents string) (ds models.DocumentedScript, err error) {
 			}
 			ds.Tags = tags
 
-			inDoc = false
-			inScript = false
+			inDoc, docStarted = false, false
+			inScript, scriptStarted = false, false
 		case strings.HasPrefix(part, "-DOCUMENTATION-"):
-			inDoc = true
-			inScript = false
+			inDoc, docStarted = true, false
+			inScript, scriptStarted = false, false
 			continue
 		case strings.HasPrefix(part, "-SCRIPT-"):
-			inScript = true
-			inDoc = false
+			inDoc, docStarted = false, false
+			inScript, scriptStarted = true, false
 			continue
+		case inDoc:
+			docStarted = true
+		case inScript:
+			scriptStarted = true
 		}
 
 		if inDoc {
-			ds.Documentation = ds.GetDocumentation() + part + "\n"
+			ds.Documentation += strings.TrimRight(p, "\t ") + "\n"
 		} else if inScript {
-			ds.Script.Content += part + "\n"
+			ds.Script.Content += p + "\n"
 		}
 	}
 	ds.Documentation = strings.TrimSpace(ds.GetDocumentation())
-	ds.Script.Content = strings.TrimSpace(ds.GetScript().GetContent())
+	ds.Script.Content = strings.TrimSpace(ds.GetScript().GetContent()) + "\n"
 	return
 }

@@ -14,23 +14,28 @@ var (
 
 -DOCUMENTATION- ` + doNotEditLine + `
 A simple script that does my things.
-A second line.
+
+	A second line.
 
 -SCRIPT- ` + doNotEditLine + `
 ls -a
-cat ~/.bashrc | grep "BILLY BOB"
-restart critical service
+	cat ~/.bashrc | grep "BILLY BOB"
+
+	restart critical service
 `
 
 	scriptStruct = models.DocumentedScript{
 		Alias: "myscript",
 		Tags:  []string{"cheese", "whiskey", "mashed potatoes"},
 		Documentation: `A simple script that does my things.
-A second line.`,
+
+	A second line.`,
 		Script: &models.Script{
 			Content: `ls -a
-cat ~/.bashrc | grep "BILLY BOB"
-restart critical service`,
+	cat ~/.bashrc | grep "BILLY BOB"
+
+	restart critical service
+`,
 		},
 	}
 )
