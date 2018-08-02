@@ -78,7 +78,7 @@ func history(cmd *cobra.Command, args []string) {
 
 func doc(cmd *cobra.Command, args []string) {
 	query, qErr := cmd.Flags().GetString("query")
-	script, cErr := cmd.Flags().GetString("cmd")
+	script, cErr := cmd.Flags().GetString("script")
 	edit, eErr := cmd.Flags().GetString("edit")
 	hLines, _ := cmd.Flags().GetInt("history")
 
@@ -109,18 +109,6 @@ func doc(cmd *cobra.Command, args []string) {
 				"Documentation", sCmd.GetDocumentation(),
 			)
 		}
-	case eErr == nil && len(edit) > 0:
-		store, err := database.NewBoltDB(dbpath, false)
-		if err != nil {
-			handleErr(err)
-			return
-		}
-		defer store.Close()
-
-		if err := coach.EditScript(edit, store); err != nil {
-			handleErr(err)
-		}
-		return
 	case len(args) >= 3:
 		store, err := database.NewBoltDB(dbpath, false)
 		if err != nil {
@@ -142,6 +130,18 @@ func doc(cmd *cobra.Command, args []string) {
 			handleErr(err)
 			return
 		}
+	case eErr == nil && len(edit) > 0:
+		store, err := database.NewBoltDB(dbpath, false)
+		if err != nil {
+			handleErr(err)
+			return
+		}
+		defer store.Close()
+
+		if err := coach.EditScript(edit, store); err != nil {
+			handleErr(err)
+		}
+		return
 	}
 }
 
