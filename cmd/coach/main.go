@@ -184,11 +184,10 @@ func run(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	fmt.Printf("Command '%s' found:\n###\n%s\n###\n$ %s\n\n", toRun.GetAlias(), toRun.GetDocumentation(), Slugify(toRun.GetScript().GetContent(), 48))
-
 	if confirmed, cErr := cmd.Flags().GetBool("confirm"); cErr == nil && confirmed {
-		fmt.Println("Running now...")
+		fmt.Println("Running " + toRun.GetAlias() + "...")
 	} else {
+		fmt.Printf("Command '%s' found:\n###\n%s\n###\n$ %s\n\n", toRun.GetAlias(), toRun.GetDocumentation(), Slugify(toRun.GetScript().GetContent(), 48))
 		fmt.Print("Run now? [y/n] ")
 		in, err := bufio.NewReader(os.Stdin).ReadString('\n')
 		if err != nil || (len(in) >= 1 && in[0] != byte('y')) {
