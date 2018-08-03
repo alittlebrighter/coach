@@ -64,6 +64,7 @@ func main() {
 	docCmd.Flags().StringP("script", "s", "", "Quoted command that you would like to document and save.")
 	docCmd.Flags().StringP("edit", "e", "", "Edit the script specified by alias.")
 	docCmd.Flags().IntP("history", "l", 1, "Number of most recent lines in history to put into the script.")
+	docCmd.Flags().String("delete", "", "Delete a saved script.")
 
 	ignoreCmd := &cobra.Command{
 		Use:   "ignore",

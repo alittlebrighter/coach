@@ -81,6 +81,7 @@ func doc(cmd *cobra.Command, args []string) {
 	script, cErr := cmd.Flags().GetString("script")
 	edit, eErr := cmd.Flags().GetString("edit")
 	hLines, _ := cmd.Flags().GetInt("history")
+	delete, _ := cmd.Flags().GetString("delete")
 
 	switch {
 	case qErr == nil && len(query) > 0:
@@ -180,6 +181,27 @@ func doc(cmd *cobra.Command, args []string) {
 
 			// TODO: report to user if something other than an overwrite error comes up
 		}
+	case len(delete) > 0:
+		fmt.Printf("Type '%s' again to delete: ", delete)
+		in, err := bufio.NewReader(os.Stdin).ReadString('\n')
+		input := strings.Fields(in)
+		if err != nil || len(input) == 0 {
+			fmt.Println("Not deleting.")
+			return
+		}
+
+		store, err := database.NewBoltDB(dbpath, false)
+		if err != nil {
+			handleErr(err)
+			return
+		}
+		defer store.Close()
+
+		fmt.Printf("Deleting '%s' now.\n", input[0])
+		if err := store.DeleteScript([]byte(input[0])); err != nil {
+			handleErr(err)
+			return
+		}
 	}
 	return
 }
@@ -224,7 +246,7 @@ func run(cmd *cobra.Command, args []string) {
 	}
 
 	if confirmed, cErr := cmd.Flags().GetBool("confirm"); cErr == nil && confirmed {
-		fmt.Println("Running " + toRun.GetAlias() + "...")
+		fmt.Println("Running '" + toRun.GetAlias() + "'...")
 	} else {
 		fmt.Printf("Command '%s' found:\n###\n%s\n###\n$ %s\n\n", toRun.GetAlias(), toRun.GetDocumentation(), Slugify(toRun.GetScript().GetContent(), 48))
 		fmt.Print("Run now? [y/n] ")
