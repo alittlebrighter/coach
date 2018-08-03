@@ -34,7 +34,6 @@ Try it out, submit an issue and/or PR if you see room for improvement.
 
 - Only works with `bash` at the moment, more support coming.
 - `coach` history ignores commands starting with 'coach'
-- Saving a script with the same alias as a previous script will destroy the previous script.
 - Multi-line scripts are now supported.  Run `coach doc -l [n] [alias] [tags] [documentation...]` to pull in the previous n lines of history into the documented script.  Or you can also run `coach doc -e [alias]` to edit the script inside of the text editor set in `$EDITOR`.
 
 ### Contributing
