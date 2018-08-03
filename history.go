@@ -42,7 +42,7 @@ func SaveHistory(line string, dupeCount int, store HistoryStore) (promptDoc bool
 		enoughDupes <- false
 	}
 
-	err = store.Save(hLine.GetId(), hLine)
+	err = store.Save(hLine.GetId(), hLine, true)
 	store.PruneHistory(viper.GetInt("history.maxlines"))
 
 	promptDoc = <-enoughDupes
@@ -60,7 +60,7 @@ func GetRecentHistory(n int, store HistoryStore) (lines []models.HistoryRecord, 
 }
 
 type HistoryStore interface {
-	Save(id []byte, value interface{}) error
+	Save(id []byte, value interface{}, overwrite bool) error
 	CheckDupeCmds(string, int) bool
 	GetRecent(tty string, n int) ([]models.HistoryRecord, error)
 	PruneHistory(max int) error

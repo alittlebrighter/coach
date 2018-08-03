@@ -23,7 +23,7 @@ func QueryScripts(query string, store ScriptStore) (scripts []models.DocumentedS
 	return
 }
 
-func SaveScript(alias string, tags []string, documentation string, script string, store ScriptStore) (err error) {
+func SaveScript(alias string, tags []string, documentation string, script string, overwrite bool, store ScriptStore) (err error) {
 	if len(script) == 0 {
 		return errors.New("no script to save")
 	}
@@ -37,14 +37,12 @@ func SaveScript(alias string, tags []string, documentation string, script string
 		Script: &models.Script{Content: strings.TrimSpace(script) + "\n"},
 	}
 
-	if len(toSave.GetAlias()) > 0 {
-		toSave.Id = []byte(toSave.GetAlias())
-	} else {
-		toSave.Id = RandomID()
-		toSave.Alias = string(toSave.GetId())
+	if len(toSave.GetAlias()) == 0 {
+		toSave.Alias = string(RandomID())
 	}
+	toSave.Id = []byte(toSave.GetAlias())
 
-	if err = store.Save(toSave.GetId(), toSave); err != nil {
+	if err = store.Save(toSave.GetId(), toSave, overwrite); err != nil {
 		return
 	}
 
@@ -53,15 +51,15 @@ func SaveScript(alias string, tags []string, documentation string, script string
 	return
 }
 
-func EditScript(alias string, store ScriptStore) error {
+func EditScript(alias string, store ScriptStore) (*models.DocumentedScript, error) {
 	script := store.GetScript([]byte(alias))
 	if script == nil {
-		return errors.New("not found")
+		return nil, errors.New("not found")
 	}
 
 	tmpfile, ferr := ioutil.TempFile("", "coach")
 	if ferr != nil {
-		return ferr
+		return nil, ferr
 	}
 	var err error
 	defer func() {
@@ -73,34 +71,26 @@ func EditScript(alias string, store ScriptStore) error {
 	}()
 
 	if _, err := tmpfile.Write(MarshalEdit(*script)); err != nil {
-		return err
+		return nil, err
 	}
 	if err := tmpfile.Close(); err != nil {
-		return err
+		return nil, err
 	}
 
 	if err := Shell.OpenEditor(tmpfile.Name()); err != nil {
-		return err
+		return nil, err
 	}
 	newContents, err := ioutil.ReadFile(tmpfile.Name())
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	var newScript models.DocumentedScript
 	if newScript, err = UnmarshalEdit(string(newContents)); err != nil {
-		return err
+		return nil, err
 	}
 
-	newScript.Id = []byte(newScript.GetAlias())
-	if newScript.GetAlias() != script.GetAlias() {
-		store.DeleteScript(script.GetId())
-	}
-	if err := SaveScript(newScript.GetAlias(), newScript.GetTags(), newScript.GetDocumentation(),
-		newScript.GetScript().GetContent(), store); err != nil {
-		return err
-	}
-	return nil
+	return &newScript, nil
 }
 
 func RunScript(script models.DocumentedScript) error {
@@ -114,7 +104,7 @@ func RunScript(script models.DocumentedScript) error {
 }
 
 type ScriptStore interface {
-	Save(id []byte, value interface{}) error
+	Save(id []byte, value interface{}, overwrite bool) error
 	GetScript(id []byte) *models.DocumentedScript
 	QueryScripts(...string) ([]models.DocumentedScript, error)
 	DeleteScript(id []byte) error

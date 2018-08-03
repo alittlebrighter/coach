@@ -102,11 +102,12 @@ func doc(cmd *cobra.Command, args []string) {
 				continue
 			}
 
-			fmt.Printf("%14s: %s\n%14s: %s\n%14s: %s\n%14s: %s\n---\n",
+			fmt.Printf("%14s: %s\n%14s: %s\n%14s: %s\n%14s: %s\n%17s\n",
 				"Script", Slugify(sCmd.GetScript().GetContent(), 48),
 				"Alias", sCmd.GetAlias(),
 				"Tags", strings.Join(sCmd.GetTags(), ","),
 				"Documentation", sCmd.GetDocumentation(),
+				"---",
 			)
 		}
 	case len(args) >= 3:
@@ -125,7 +126,7 @@ func doc(cmd *cobra.Command, args []string) {
 			}
 		}
 
-		err = coach.SaveScript(args[0], strings.Split(args[1], ","), strings.Join(args[2:], " "), script, store)
+		err = coach.SaveScript(args[0], strings.Split(args[1], ","), strings.Join(args[2:], " "), script, false, store)
 		if err != nil {
 			handleErr(err)
 			return
@@ -138,11 +139,49 @@ func doc(cmd *cobra.Command, args []string) {
 		}
 		defer store.Close()
 
-		if err := coach.EditScript(edit, store); err != nil {
+		newScript, err := coach.EditScript(edit, store)
+		if err != nil {
 			handleErr(err)
+			return
 		}
-		return
+
+		overwrite := true
+		if newScript.GetAlias() != edit {
+			overwrite = false
+		}
+
+		save := func(ovrwrt bool) error {
+			err := coach.SaveScript(newScript.GetAlias(), newScript.GetTags(), newScript.GetDocumentation(),
+				newScript.GetScript().GetContent(), ovrwrt, store)
+
+			if newScript.GetAlias() != edit && err == nil {
+				store.DeleteScript([]byte(edit))
+			}
+			return err
+		}
+
+		for err := save(overwrite); err == database.ErrAlreadyExists; err = save(overwrite) {
+			fmt.Printf("The alias '%s' already exists.\n", newScript.GetAlias())
+			fmt.Printf("Enter '%s' again to overwrite, or try something else: ", newScript.GetAlias())
+			in, inErr := bufio.NewReader(os.Stdin).ReadString('\n')
+			if inErr != nil || len(strings.TrimSpace(in)) == 0 {
+				overwrite = false
+				continue
+			}
+			input := strings.Fields(in)[0]
+
+			if input == newScript.GetAlias() || input == edit {
+				overwrite = true
+				continue
+			} else {
+				newScript.Alias = input
+				overwrite = false
+			}
+
+			// TODO: report to user if something other than an overwrite error comes up
+		}
 	}
+	return
 }
 
 // should run this through "business logic" in coach package

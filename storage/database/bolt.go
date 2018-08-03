@@ -209,7 +209,9 @@ func shouldIgnore(tx *bolt.Tx, command string) (yes bool) {
 	return
 }
 
-func (b *BoltDB) Save(id []byte, instance interface{}) (err error) {
+var ErrAlreadyExists = errors.New("already exists")
+
+func (b *BoltDB) Save(id []byte, instance interface{}, overwrite bool) (err error) {
 	var bucket []byte
 	switch instance.(type) {
 	case models.HistoryRecord:
@@ -224,6 +226,9 @@ func (b *BoltDB) Save(id []byte, instance interface{}) (err error) {
 		id = xid.New().Bytes()
 	}
 	return b.db.Update(func(tx *bolt.Tx) error {
+		if !overwrite && tx.Bucket(bucket).Get(id) != nil {
+			return ErrAlreadyExists
+		}
 		return saveToBucket(tx, bucket, id, instance)
 	})
 }
