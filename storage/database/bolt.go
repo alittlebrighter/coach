@@ -5,6 +5,8 @@ package database
 
 import (
 	"errors"
+	"fmt"
+	"strings"
 	"time"
 
 	"github.com/buger/jsonparser"
@@ -60,15 +62,19 @@ func (b *BoltDB) initDB() error {
 func (b *BoltDB) CheckDupeCmds(command string, count int) (countReached bool) {
 	b.db.View(func(tx *bolt.Tx) error {
 		if shouldIgnore(tx, command) {
+			fmt.Println("should ignore, exiting")
 			countReached = false
 			return nil
 		}
+		command = CleanseCommand(command)
 
 		// Assume bucket exists and has keys
 		c := tx.Bucket(HistoryBucket).Cursor()
 
 		for k, v := c.Last(); count > 0 && k != nil; k, v = c.Prev() {
-			if fullCmd, err := jsonparser.GetUnsafeString(v, "fullCommand"); err == nil && fullCmd == command {
+			fullCmd, err := jsonparser.GetUnsafeString(v, "fullCommand")
+			if err == nil && fullCmd == command {
+				fmt.Println("found dupe")
 				count--
 			}
 		}
@@ -77,6 +83,11 @@ func (b *BoltDB) CheckDupeCmds(command string, count int) (countReached bool) {
 		return nil
 	})
 	return
+}
+
+// CleanseCommand converts a command to what it would look like in the database
+func CleanseCommand(command string) string {
+	return strings.Replace(command, `"`, `\"`, -1)
 }
 
 // GetRecent retrieves the last count (arg) lines of history from specified tty (arg).
