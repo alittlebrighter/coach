@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	Shell platforms.Shell
+	Shell platforms.Platform
 )
 
 func init() {

@@ -14,15 +14,6 @@ import (
 	"github.com/rs/xid"
 )
 
-type Shell interface {
-	History(lineCount int) (lines []string, err error)
-	GetTTY() string
-	GetPWD() string
-	BuildCommand(script string) *exec.Cmd
-	CreateTmpFile(contents []byte) (string, error)
-	OpenEditor(filepath string) error
-}
-
 func CleanupCommand(cmd string) (clean string) {
 	var err error
 	parts := strings.Fields(cmd)
@@ -67,8 +58,8 @@ func (b *Bash) GetPWD() string {
 	return path
 }
 
-func (b *Bash) BuildCommand(script string) *exec.Cmd {
-	return exec.Command("bash", "-c", "( "+script+" )")
+func (b *Bash) BuildCommand(script string) (*exec.Cmd, func(), error) {
+	return exec.Command("bash", "-c", "( "+script+" )"), nil, nil
 }
 
 func (b *Bash) CreateTmpFile(contents []byte) (string, error) {

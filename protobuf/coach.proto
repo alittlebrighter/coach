@@ -12,6 +12,7 @@ import "google/protobuf/timestamp.proto";
 message Script {
     string content = 1;
     repeated string variables = 2;
+    string shell = 3;
 }
 
 message HistoryRecord {

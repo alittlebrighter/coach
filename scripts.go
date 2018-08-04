@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/alittlebrighter/coach/gen/models"
+	"github.com/alittlebrighter/coach/platforms"
 )
 
 func QueryScripts(query string, store ScriptStore) (scripts []models.DocumentedScript, err error) {
@@ -23,19 +24,19 @@ func QueryScripts(query string, store ScriptStore) (scripts []models.DocumentedS
 	return
 }
 
-func SaveScript(alias string, tags []string, documentation string, script string, overwrite bool, store ScriptStore) (err error) {
-	if len(script) == 0 {
+func SaveScript(toSave models.DocumentedScript, overwrite bool, store ScriptStore) (err error) {
+	if toSave.GetScript() == nil || len(toSave.GetScript().GetContent()) == 0 {
 		return errors.New("no script to save")
 	}
 
-	toSave := models.DocumentedScript{
-		Alias:         alias,
-		Tags:          tags,
-		Documentation: documentation,
-
-		// TODO: parse variables out of script
-		Script: &models.Script{Content: strings.TrimSpace(script) + "\n"},
+	toSave.Alias = strings.TrimSpace(toSave.GetAlias())
+	for i := range toSave.GetTags() {
+		toSave.Tags[i] = strings.TrimSpace(toSave.GetTags()[i])
 	}
+	toSave.Documentation = strings.TrimSpace(toSave.GetDocumentation())
+	// TODO: parse variables out of script
+	toSave.Script.Content = strings.TrimSpace(toSave.GetScript().GetContent()) + "\n"
+	toSave.Script.Shell = strings.TrimSpace(toSave.GetScript().GetShell())
 
 	if len(toSave.GetAlias()) == 0 {
 		toSave.Alias = string(RandomID())
@@ -54,7 +55,12 @@ func SaveScript(alias string, tags []string, documentation string, script string
 func EditScript(alias string, store ScriptStore) (*models.DocumentedScript, error) {
 	script := store.GetScript([]byte(alias))
 	if script == nil {
-		script = &models.DocumentedScript{Id: []byte(alias), Alias: alias, Tags: []string{alias}}
+		script = &models.DocumentedScript{
+			Id:     []byte(alias),
+			Alias:  alias,
+			Tags:   []string{alias},
+			Script: &models.Script{Shell: platforms.IdentifyShell()},
+		}
 	}
 
 	tmpfile, ferr := ioutil.TempFile("", "coach")
@@ -94,7 +100,15 @@ func EditScript(alias string, store ScriptStore) (*models.DocumentedScript, erro
 }
 
 func RunScript(script models.DocumentedScript) error {
-	toRun := Shell.BuildCommand(script.GetScript().GetContent())
+	shell := platforms.GetShell(script.GetScript().GetShell())
+
+	toRun, cleanup, err := shell.BuildCommand(script.GetScript().GetContent())
+	if cleanup != nil {
+		defer cleanup()
+	}
+	if err != nil {
+		return err
+	}
 	toRun.Stdin = os.Stdin
 	toRun.Stdout = os.Stdout
 	toRun.Stderr = os.Stderr
@@ -116,7 +130,8 @@ const doNotEditLine = "!DO NOT EDIT THIS LINE!"
 func MarshalEdit(s models.DocumentedScript) []byte {
 	var contents strings.Builder
 	contents.WriteString("-ALIAS- = " + s.GetAlias() + "\n")
-	contents.WriteString("-TAGS- = " + strings.Join(s.GetTags(), ",") + "\n\n")
+	contents.WriteString("-TAGS- = " + strings.Join(s.GetTags(), ",") + "\n")
+	contents.WriteString("-SHELL- = " + s.GetScript().GetShell() + "\n\n")
 	contents.WriteString("-DOCUMENTATION- " + doNotEditLine + "\n")
 	contents.WriteString(s.GetDocumentation() + "\n\n")
 	contents.WriteString("-SCRIPT- " + doNotEditLine + "\n")
@@ -153,6 +168,11 @@ func UnmarshalEdit(contents string) (ds models.DocumentedScript, err error) {
 				tags[i] = strings.TrimSpace(tags[i])
 			}
 			ds.Tags = tags
+
+			inDoc, docStarted = false, false
+			inScript, scriptStarted = false, false
+		case strings.HasPrefix(part, "-SHELL- ="):
+			ds.Script.Shell = strings.TrimSpace(strings.Split(part, "=")[1])
 
 			inDoc, docStarted = false, false
 			inScript, scriptStarted = false, false

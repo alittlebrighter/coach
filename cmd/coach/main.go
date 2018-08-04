@@ -18,6 +18,7 @@ import (
 
 	"github.com/alittlebrighter/coach"
 	"github.com/alittlebrighter/coach/gen/models"
+	"github.com/alittlebrighter/coach/platforms"
 	"github.com/alittlebrighter/coach/storage/database"
 )
 
@@ -127,7 +128,17 @@ func doc(cmd *cobra.Command, args []string) {
 			}
 		}
 
-		err = coach.SaveScript(args[0], strings.Split(args[1], ","), strings.Join(args[2:], " "), script, false, store)
+		shell := platforms.IdentifyShell()
+		if len(shell) == 0 {
+			fmt.Println("You're shell could not be identified.  Using 'bash' for now.\nRun `coach doc -e " + args[0] + "` to edit.")
+			shell = "bash"
+		}
+		err = coach.SaveScript(models.DocumentedScript{
+			Alias:         args[0],
+			Tags:          strings.Split(args[1], ","),
+			Documentation: strings.Join(args[2:], " "),
+			Script:        &models.Script{Content: script, Shell: shell}},
+			false, store)
 		if err != nil {
 			handleErr(err)
 			return
@@ -152,8 +163,7 @@ func doc(cmd *cobra.Command, args []string) {
 		}
 
 		save := func(ovrwrt bool) error {
-			err := coach.SaveScript(newScript.GetAlias(), newScript.GetTags(), newScript.GetDocumentation(),
-				newScript.GetScript().GetContent(), ovrwrt, store)
+			err := coach.SaveScript(*newScript, ovrwrt, store)
 
 			if newScript.GetAlias() != edit && err == nil {
 				store.DeleteScript([]byte(edit))
