@@ -54,7 +54,7 @@ func SaveScript(alias string, tags []string, documentation string, script string
 func EditScript(alias string, store ScriptStore) (*models.DocumentedScript, error) {
 	script := store.GetScript([]byte(alias))
 	if script == nil {
-		return nil, errors.New("not found")
+		script = &models.DocumentedScript{Id: []byte(alias), Alias: alias, Tags: []string{alias}}
 	}
 
 	tmpfile, ferr := ioutil.TempFile("", "coach")
