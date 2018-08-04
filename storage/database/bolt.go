@@ -5,7 +5,6 @@ package database
 
 import (
 	"errors"
-	"fmt"
 	"strings"
 	"time"
 
@@ -62,7 +61,6 @@ func (b *BoltDB) initDB() error {
 func (b *BoltDB) CheckDupeCmds(command string, count int) (countReached bool) {
 	b.db.View(func(tx *bolt.Tx) error {
 		if shouldIgnore(tx, command) {
-			fmt.Println("should ignore, exiting")
 			countReached = false
 			return nil
 		}
@@ -74,7 +72,6 @@ func (b *BoltDB) CheckDupeCmds(command string, count int) (countReached bool) {
 		for k, v := c.Last(); count > 0 && k != nil; k, v = c.Prev() {
 			fullCmd, err := jsonparser.GetUnsafeString(v, "fullCommand")
 			if err == nil && fullCmd == command {
-				fmt.Println("found dupe")
 				count--
 			}
 		}
