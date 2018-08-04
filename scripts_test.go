@@ -10,7 +10,8 @@ import (
 
 var (
 	scriptFile = `-ALIAS- = myscript
--TAGS- = cheese,whiskey,mashed potatoes
+ -TAGS- = cheese,whiskey,mashed potatoes
+-SHELL- = bash
 
 -DOCUMENTATION- ` + doNotEditLine + `
 A simple script that does my things.
@@ -36,6 +37,7 @@ ls -a
 
 	restart critical service
 `,
+			Shell: "bash",
 		},
 	}
 )

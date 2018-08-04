@@ -130,7 +130,7 @@ const doNotEditLine = "!DO NOT EDIT THIS LINE!"
 func MarshalEdit(s models.DocumentedScript) []byte {
 	var contents strings.Builder
 	contents.WriteString("-ALIAS- = " + s.GetAlias() + "\n")
-	contents.WriteString("-TAGS- = " + strings.Join(s.GetTags(), ",") + "\n")
+	contents.WriteString(" -TAGS- = " + strings.Join(s.GetTags(), ",") + "\n")
 	contents.WriteString("-SHELL- = " + s.GetScript().GetShell() + "\n\n")
 	contents.WriteString("-DOCUMENTATION- " + doNotEditLine + "\n")
 	contents.WriteString(s.GetDocumentation() + "\n\n")
