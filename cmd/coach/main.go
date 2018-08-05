@@ -85,33 +85,6 @@ func doc(cmd *cobra.Command, args []string) {
 	delete, _ := cmd.Flags().GetString("delete")
 
 	switch {
-	case qErr == nil && len(query) > 0:
-		store, err := database.NewBoltDB(dbpath, true)
-		if err != nil {
-			handleErr(err)
-			return
-		}
-		defer store.Close()
-
-		cmds, err := coach.QueryScripts(query, store)
-		if err != nil {
-			handleErr(err)
-			return
-		}
-
-		for _, sCmd := range cmds {
-			if sCmd.GetId() == nil || len(sCmd.GetId()) == 0 {
-				continue
-			}
-
-			fmt.Printf("%14s: %s\n%14s: %s\n%14s: %s\n%14s: %s\n%17s\n",
-				"Script", Slugify(sCmd.GetScript().GetContent(), 48),
-				"Alias", sCmd.GetAlias(),
-				"Tags", strings.Join(sCmd.GetTags(), ","),
-				"Documentation", sCmd.GetDocumentation(),
-				"---",
-			)
-		}
 	case len(args) >= 3:
 		store, err := database.NewBoltDB(dbpath, false)
 		if err != nil {
@@ -214,6 +187,33 @@ func doc(cmd *cobra.Command, args []string) {
 		if err := store.DeleteScript([]byte(input[0])); err != nil {
 			handleErr(err)
 			return
+		}
+	case qErr == nil && len(query) > 0:
+		store, err := database.NewBoltDB(dbpath, true)
+		if err != nil {
+			handleErr(err)
+			return
+		}
+		defer store.Close()
+
+		cmds, err := coach.QueryScripts(query, store)
+		if err != nil {
+			handleErr(err)
+			return
+		}
+
+		for _, sCmd := range cmds {
+			if sCmd.GetId() == nil || len(sCmd.GetId()) == 0 {
+				continue
+			}
+
+			fmt.Printf("%14s: %s\n%14s: %s\n%14s: %s\n%14s: %s\n%17s\n",
+				"Script", Slugify(sCmd.GetScript().GetContent(), 48),
+				"Alias", sCmd.GetAlias(),
+				"Tags", strings.Join(sCmd.GetTags(), ","),
+				"Documentation", sCmd.GetDocumentation(),
+				"---",
+			)
 		}
 	}
 	return

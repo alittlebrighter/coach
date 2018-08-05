@@ -16,6 +16,8 @@ import (
 	"github.com/alittlebrighter/coach/gen/models"
 )
 
+const Wildcard = "?"
+
 var (
 	HistoryBucket   = []byte("history")
 	SavedCmdsBucket = []byte("commands")
@@ -139,13 +141,29 @@ func (b *BoltDB) QueryScripts(tags ...string) ([]models.DocumentedScript, error)
 	if len(tags) == 0 {
 		return cmds, nil
 	}
+	all := false
+	for _, tag := range tags {
+		if tag == Wildcard {
+			all = true
+			break
+		}
+	}
+
 	err := b.db.View(func(tx *bolt.Tx) error {
 		// Assume bucket exists and has keys
 		c := tx.Bucket(SavedCmdsBucket).Cursor()
 
 		for k, v := c.First(); k != nil; k, v = c.Next() {
-			// this is an ugly abuse of scoping rules
 			var savedCmd models.DocumentedScript
+			if all {
+				err := json.Unmarshal(v, &savedCmd)
+				if err == nil {
+					cmds = append(cmds, savedCmd)
+				}
+				continue
+			}
+
+			// this is an ugly abuse of scoping rules
 			skip := false
 			jsonparser.ArrayEach(v, func(value []byte, dataType jsonparser.ValueType, offset int, err error) {
 				if skip {

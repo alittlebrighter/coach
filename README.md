@@ -32,10 +32,10 @@ Run `coach --help` to see other available options.
 ### Notes
 Try it out, submit an issue and/or PR if you see room for improvement.
 
+- Return all documented scripts with the tag "?" or just run `coach doc -q`
 - Basic Windows support has been implemented.  You can document, save, and run batch and Powershell scripts.  You can manually add lines to your history but a good way of automatically tracking history in the Windows command prompt or Powershell hasn't been found yet.
 - Rudimentary support for other interpreters.  So long as the interpreter takes a file name as a first argument, and you enter the `SHELL` value as it appears on your `$PATH` it should work.  `bash` is the default.
 - `coach` history ignores commands starting with 'coach'
-- Multi-line scripts are now supported.  Run `coach doc -l [n] [alias] [tags] [documentation...]` to pull in the previous n lines of history into the documented script.  Or you can also run `coach doc -e [alias]` to edit the script inside of the text editor set in `$EDITOR`.
 
 ### Contributing
 
