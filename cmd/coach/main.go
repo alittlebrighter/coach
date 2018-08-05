@@ -46,7 +46,9 @@ func history(cmd *cobra.Command, args []string) {
 		dupeCount := viper.GetInt("history.reps-pre-doc-prompt")
 
 		if enoughDupes, _ := coach.SaveHistory(record, dupeCount, store); enoughDupes {
-			fmt.Printf("This command has been used %d+ times.\nRun `coach doc [alias] [tags] [comment]` to document this command.\n",
+			fmt.Printf("\n---\nThis command has been used %d+ times.\nRun `coach doc [alias] "+
+				"[tags] [comment...]` to save and document this command.\nRun `coach ignore` to silence "+
+				"this output for this command.\n",
 				dupeCount)
 		}
 	default:
@@ -168,6 +170,18 @@ func doc(cmd *cobra.Command, args []string) {
 			return
 		}
 	case len(delete) > 0:
+		store, err := database.NewBoltDB(dbpath, false)
+		if err != nil {
+			handleErr(err)
+			return
+		}
+		defer store.Close()
+
+		if store.GetScript([]byte(strings.TrimSpace(delete))) == nil {
+			handleErr(database.ErrNotFound)
+			return
+		}
+
 		fmt.Printf("Type '%s' again to delete: ", delete)
 		in, err := bufio.NewReader(os.Stdin).ReadString('\n')
 		input := strings.Fields(in)
@@ -175,13 +189,6 @@ func doc(cmd *cobra.Command, args []string) {
 			fmt.Println("Not deleting.")
 			return
 		}
-
-		store, err := database.NewBoltDB(dbpath, false)
-		if err != nil {
-			handleErr(err)
-			return
-		}
-		defer store.Close()
 
 		fmt.Printf("Deleting '%s' now.\n", input[0])
 		if err := store.DeleteScript([]byte(input[0])); err != nil {

@@ -29,6 +29,9 @@ var (
 	}
 
 	json = jsoniter.ConfigCompatibleWithStandardLibrary
+
+	ErrNotFound      = errors.New("not found")
+	ErrAlreadyExists = errors.New("already exists")
 )
 
 type BoltDB struct {
@@ -192,7 +195,7 @@ func (b *BoltDB) GetScript(alias []byte) (command *models.DocumentedScript) {
 	b.db.View(func(tx *bolt.Tx) error {
 		cmdData := tx.Bucket(SavedCmdsBucket).Get(alias)
 		if cmdData == nil || len(cmdData) == 0 {
-			return errors.New("not found")
+			return ErrNotFound
 		}
 
 		return json.Unmarshal(cmdData, &command)
@@ -234,8 +237,6 @@ func shouldIgnore(tx *bolt.Tx, command string) (yes bool) {
 	yes = tx.Bucket(IgnoreBucket).Get([]byte(command)) != nil
 	return
 }
-
-var ErrAlreadyExists = errors.New("already exists")
 
 func (b *BoltDB) Save(id []byte, instance interface{}, overwrite bool) (err error) {
 	var bucket []byte
