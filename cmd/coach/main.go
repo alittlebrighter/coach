@@ -171,7 +171,7 @@ func doc(cmd *cobra.Command, args []string) {
 			return err
 		}
 
-		for err := save(overwrite); err == database.ErrAlreadyExists; err = save(overwrite) {
+		for err = save(overwrite); err == database.ErrAlreadyExists; err = save(overwrite) {
 			fmt.Printf("The alias '%s' already exists.\n", newScript.GetAlias())
 			fmt.Printf("Enter '%s' again to overwrite, or try something else: ", newScript.GetAlias())
 			in, inErr := bufio.NewReader(os.Stdin).ReadString('\n')
@@ -188,8 +188,11 @@ func doc(cmd *cobra.Command, args []string) {
 				newScript.Alias = input
 				overwrite = false
 			}
+		}
 
-			// TODO: report to user if something other than an overwrite error comes up
+		if err != nil {
+			handleErr(err)
+			return
 		}
 	case len(delete) > 0:
 		fmt.Printf("Type '%s' again to delete: ", delete)

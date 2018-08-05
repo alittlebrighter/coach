@@ -25,7 +25,7 @@ func QueryScripts(query string, store ScriptStore) (scripts []models.DocumentedS
 }
 
 func SaveScript(toSave models.DocumentedScript, overwrite bool, store ScriptStore) (err error) {
-	if toSave.GetScript() == nil || len(toSave.GetScript().GetContent()) == 0 {
+	if toSave.GetScript() == nil || len(strings.TrimSpace(toSave.GetScript().GetContent())) == 0 {
 		return errors.New("no script to save")
 	}
 
@@ -129,13 +129,13 @@ const doNotEditLine = "!DO NOT EDIT THIS LINE!"
 
 func MarshalEdit(s models.DocumentedScript) []byte {
 	var contents strings.Builder
-	contents.WriteString("-ALIAS- = " + s.GetAlias() + "\n")
-	contents.WriteString(" -TAGS- = " + strings.Join(s.GetTags(), ",") + "\n")
-	contents.WriteString("-SHELL- = " + s.GetScript().GetShell() + "\n\n")
-	contents.WriteString("-DOCUMENTATION- " + doNotEditLine + "\n")
-	contents.WriteString(s.GetDocumentation() + "\n\n")
-	contents.WriteString("-SCRIPT- " + doNotEditLine + "\n")
-	contents.WriteString(s.GetScript().GetContent())
+	contents.WriteString("-ALIAS- = " + s.GetAlias() + platforms.Newline(1))
+	contents.WriteString(" -TAGS- = " + strings.Join(s.GetTags(), ",") + platforms.Newline(1))
+	contents.WriteString("-SHELL- = " + s.GetScript().GetShell() + platforms.Newline(2))
+	contents.WriteString("-DOCUMENTATION- " + doNotEditLine + platforms.Newline(1))
+	contents.WriteString(s.GetDocumentation() + platforms.Newline(2))
+	contents.WriteString("-SCRIPT- " + doNotEditLine + platforms.Newline(1))
+	contents.WriteString(strings.TrimSpace(s.GetScript().GetContent()) + platforms.Newline(1))
 	return []byte(contents.String())
 }
 
@@ -148,7 +148,7 @@ func UnmarshalEdit(contents string) (ds models.DocumentedScript, err error) {
 
 	ds.Script = new(models.Script)
 
-	parts := strings.Split(contents, "\n")
+	parts := strings.Split(contents, platforms.Newline(1))
 	var inDoc, docStarted, inScript, scriptStarted bool
 	for _, p := range parts {
 		part := strings.TrimSpace(p)
@@ -191,12 +191,12 @@ func UnmarshalEdit(contents string) (ds models.DocumentedScript, err error) {
 		}
 
 		if inDoc {
-			ds.Documentation += strings.TrimRight(p, "\t ") + "\n"
+			ds.Documentation += strings.TrimRight(p, "\t ") + platforms.Newline(1)
 		} else if inScript {
-			ds.Script.Content += p + "\n"
+			ds.Script.Content += p + platforms.Newline(1)
 		}
 	}
 	ds.Documentation = strings.TrimSpace(ds.GetDocumentation())
-	ds.Script.Content = strings.TrimSpace(ds.GetScript().GetContent()) + "\n"
+	ds.Script.Content = strings.TrimSpace(ds.GetScript().GetContent()) + platforms.Newline(1)
 	return
 }

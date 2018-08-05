@@ -68,11 +68,7 @@ func (b *Bash) CreateTmpFile(contents []byte) (string, error) {
 }
 
 func (b *Bash) OpenEditor(filename string) error {
-	editor := os.Getenv("EDITOR")
-	if len(editor) == 0 {
-		editor = "nano"
-	}
-	cmd := exec.Command(editor, filename)
+	cmd := exec.Command(GetEditorCmd(), filename)
 	cmd.Stdin, cmd.Stdout, cmd.Stderr = os.Stdin, os.Stdout, os.Stderr
 	return cmd.Run()
 }
