@@ -3,6 +3,8 @@
 Coach helps you document Ops processes by recording all of your commands and prompting you to save an alias and document frequently run commands.  This 
 documentation can then be queried later on the command line.
 
+Go beyond autosuggestion tools with a way to quickly attach queryable tags and documentation to all of your scripts without leaving the command line.
+
 ### Install
 `go get -u github.com/alittlebrighter/coach/cmd/coach`
 
