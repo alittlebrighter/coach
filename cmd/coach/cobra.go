@@ -54,6 +54,7 @@ func main() {
 		Run:   history,
 	}
 	historyCmd.Flags().StringP("record", "r", "", "Record command.  With `bash` you can use \"$(history 1)\"")
+	historyCmd.Flags().BoolP("all", "a", false, "Retrieve history from all sessions.")
 
 	docCmd := &cobra.Command{
 		Use:     "doc",
@@ -102,6 +103,7 @@ func initConfig() {
 	viper.SetTypeByDefaultValue(true)
 	viper.SetDefault("history.maxlines", 1000)
 	viper.SetDefault("history.reps-pre-doc-prompt", 3)
+	viper.SetDefault("timestampFormat", "01/02 03:04:05PM")
 
 	viper.AddConfigPath(home + "/.coach")
 	viper.SetConfigName("config")

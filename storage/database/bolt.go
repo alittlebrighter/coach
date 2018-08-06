@@ -100,8 +100,10 @@ func (b *BoltDB) GetRecent(tty string, count int) ([]models.HistoryRecord, error
 		c := tx.Bucket(HistoryBucket).Cursor()
 
 		for k, v := c.Last(); len(records) < count && k != nil; k, v = c.Prev() {
-			if lineTty, err := jsonparser.GetUnsafeString(v, "tty"); err != nil || lineTty != tty {
-				continue
+			if tty != Wildcard {
+				if lineTty, err := jsonparser.GetUnsafeString(v, "tty"); err != nil || lineTty != tty {
+					continue
+				}
 			}
 
 			var line models.HistoryRecord

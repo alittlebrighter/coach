@@ -10,7 +10,6 @@ import (
 	"os/exec"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/rs/xid"
 	"github.com/spf13/cobra"
@@ -33,6 +32,7 @@ func session(cmd *cobra.Command, args []string) {
 
 func history(cmd *cobra.Command, args []string) {
 	record, rErr := cmd.Flags().GetString("record")
+	all, _ := cmd.Flags().GetBool("all")
 
 	switch {
 	case rErr == nil && len(record) > 0:
@@ -65,7 +65,8 @@ func history(cmd *cobra.Command, args []string) {
 				count = 10
 			}
 		}
-		lines, err := coach.GetRecentHistory(count, store)
+
+		lines, err := coach.GetRecentHistory(count, all, store)
 		if err != nil {
 			fmt.Println("Could not retrieve history for this session!  ERROR:", err)
 			break
@@ -73,7 +74,7 @@ func history(cmd *cobra.Command, args []string) {
 
 		for _, line := range lines {
 			id, _ := xid.FromBytes(line.GetId())
-			fmt.Printf("%s %s - %s\n", id.Time().Format(time.RFC3339), id.String(),
+			fmt.Printf("%s %s - %s\n", id.Time().Format(viper.GetString("timestampFormat")), line.GetTty(),
 				line.GetFullCommand())
 		}
 	}
@@ -96,7 +97,7 @@ func doc(cmd *cobra.Command, args []string) {
 		defer store.Close()
 
 		if cErr != nil || len(script) == 0 {
-			if lines, err := coach.GetRecentHistory(hLines, store); err == nil && len(lines) > 0 {
+			if lines, err := coach.GetRecentHistory(hLines, false, store); err == nil && len(lines) > 0 {
 				for _, line := range lines {
 					script += line.GetFullCommand() + "\n"
 				}
@@ -236,7 +237,7 @@ func ignore(cmd *cobra.Command, args []string) {
 	defer store.Close()
 
 	var fullCmd string
-	if hLines, err := coach.GetRecentHistory(1, store); err == nil && len(hLines) > 0 {
+	if hLines, err := coach.GetRecentHistory(1, false, store); err == nil && len(hLines) > 0 {
 		fullCmd = hLines[0].GetFullCommand()
 	}
 

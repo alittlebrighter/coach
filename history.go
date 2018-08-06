@@ -12,6 +12,7 @@ import (
 
 	"github.com/alittlebrighter/coach/gen/models"
 	"github.com/alittlebrighter/coach/platforms"
+	"github.com/alittlebrighter/coach/storage/database"
 )
 
 func SaveHistory(line string, dupeCount int, store HistoryStore) (promptDoc bool, err error) {
@@ -50,12 +51,19 @@ func SaveHistory(line string, dupeCount int, store HistoryStore) (promptDoc bool
 	return
 }
 
-func GetRecentHistory(n int, store HistoryStore) (lines []models.HistoryRecord, err error) {
+func GetRecentHistory(n int, allSessions bool, store HistoryStore) (lines []models.HistoryRecord, err error) {
 	if n <= 0 {
 		err = errors.New("invalid input")
 	}
 
-	lines, err = store.GetRecent(Shell.GetTTY(), n)
+	var tty string
+	if allSessions {
+		tty = database.Wildcard
+	} else {
+		tty = Shell.GetTTY()
+	}
+
+	lines, err = store.GetRecent(tty, n)
 	return
 }
 
