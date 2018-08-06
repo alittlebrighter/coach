@@ -21,7 +21,8 @@ var (
 
 func main() {
 	// Find home directory.
-	home, err := homedir.Dir()
+	var err error
+	home, err = homedir.Dir()
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
@@ -32,14 +33,20 @@ func main() {
 	os.Mkdir(home, os.ModePerm)
 
 	if err != nil {
-		fmt.Println("Could not access database.  ERROR:", err)
+		fmt.Println("Could not find or create '"+home+"'.  ERROR:", err)
 		os.Exit(1)
 	}
 
 	rootCmd := &cobra.Command{
 		Use:   "coach",
 		Short: "A tool to help you save and document common commands executed on the command line.",
-		Run:   appMain,
+		Long: fmt.Sprintf("%s\nAuthor: %s\n\nConfiguration: %s\nScript DB: %s",
+			"Coach: Save, document, query, and run all of your scripts.",
+			"Adam Bright <brightam1@gmail.com>",
+			home+"/config.yaml",
+			home+"/coach.db",
+		),
+		Run: appMain,
 	}
 	/*
 		sessionCmd := &cobra.Command{
@@ -115,6 +122,6 @@ func initConfig() {
 	if err := viper.ReadInConfig(); err != nil {
 		defaults := viper.AllSettings()
 		data, _ := yaml.Marshal(&defaults)
-		ioutil.WriteFile(home+"/.coach/config.yaml", data, 0600)
+		ioutil.WriteFile(home+"/config.yaml", data, 0600)
 	}
 }

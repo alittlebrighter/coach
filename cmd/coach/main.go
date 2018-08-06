@@ -23,7 +23,6 @@ import (
 
 func appMain(cmd *cobra.Command, args []string) {
 	cmd.Help()
-	fmt.Println("\nAuthor: Adam Bright <brightam1@gmail.com>")
 }
 
 func session(cmd *cobra.Command, args []string) {
