@@ -73,8 +73,13 @@ func history(cmd *cobra.Command, args []string) {
 
 		for _, line := range lines {
 			id, _ := xid.FromBytes(line.GetId())
-			fmt.Printf("%s %s - %s\n", id.Time().Format(viper.GetString("timestampFormat")), line.GetTty(),
-				line.GetFullCommand())
+			if all {
+				fmt.Printf("%s %s - %s\n", id.Time().Format(viper.GetString("timestampFormat")), line.GetTty(),
+					line.GetFullCommand())
+			} else {
+				fmt.Printf("%s - %s\n", id.Time().Format(viper.GetString("timestampFormat")),
+					line.GetFullCommand())
+			}
 		}
 	}
 }
