@@ -3,7 +3,7 @@
 Coach helps you document Ops processes by recording all of your commands and prompting you to save an alias and document frequently run commands.  This 
 documentation can then be queried later on the command line.
 
-Go beyond autosuggestion tools with a way to quickly attach queryable tags and documentation to all of your scripts without leaving the command line.
+Go beyond autosuggestion tools, quickly attach queryable tags and documentation to all of your scripts without leaving the command line.
 
 ### Install
 `go get -u github.com/alittlebrighter/coach/cmd/coach`
@@ -34,7 +34,7 @@ Run `coach --help` to see other available options.
 ### Notes
 Try it out, submit an issue and/or PR if you see room for improvement.
 
-- Return all documented scripts with the tag "?" or just run `coach doc -q`
+- Return all documented scripts with the tag "?" or just run `coach doc`
 - Basic Windows support has been implemented.  You can document, save, and run batch and Powershell scripts.  You can manually add lines to your history but a good way of automatically tracking history in the Windows command prompt or Powershell hasn't been found yet.
 - Rudimentary support for other interpreters.  So long as the interpreter takes a file name as a first argument, and you enter the `SHELL` value as it appears on your `$PATH` it should work.  `bash` is the default.
 - `coach` history ignores commands starting with 'coach'
