@@ -8,9 +8,8 @@ import (
 	"io/ioutil"
 	"os"
 
-	"github.com/alittlebrighter/coach-pro/platforms"
+	coach "github.com/alittlebrighter/coach-pro"
 	"github.com/alittlebrighter/coach-pro/storage/database"
-	homedir "github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"gopkg.in/yaml.v2"
@@ -22,19 +21,8 @@ var (
 
 func main() {
 	// Find home directory.
-	envSetHome := os.Getenv("COACH_HOME")
-	defaultAppDir := platforms.DefaultHomeDir()
-	_, sysErr := os.Stat(defaultAppDir + "/coach")
-	switch {
-	case len(envSetHome) > 0:
-		home = envSetHome
-	case sysErr == nil:
-		home = defaultAppDir + "/coach"
-	default:
-		homeDir, _ := homedir.Dir()
-		home = homeDir + "/.coach"
-		os.Mkdir(home, os.ModePerm)
-	}
+	home = coach.HomeDir()
+	os.Mkdir(home, os.ModePerm)
 	dbpath = home + "/coach.db"
 
 	rootCmd := &cobra.Command{
