@@ -7,7 +7,7 @@ package coach
 import (
 	"github.com/rs/xid"
 
-	"github.com/alittlebrighter/coach/platforms"
+	"github.com/alittlebrighter/coach-pro/platforms"
 )
 
 var (

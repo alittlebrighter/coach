@@ -42,3 +42,7 @@ func GetShell(name string) Shell {
 }
 
 const DefaultShell = "bash"
+
+func DefaultHomeDir() string {
+	return "/opt"
+}

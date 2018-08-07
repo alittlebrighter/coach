@@ -5,7 +5,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/alittlebrighter/coach/gen/models"
+	"github.com/alittlebrighter/coach-pro/gen/models"
 )
 
 var (

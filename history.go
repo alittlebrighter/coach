@@ -5,14 +5,15 @@ package coach
 
 import (
 	"errors"
+	"os/user"
 	"strings"
 
 	"github.com/golang/protobuf/ptypes"
 	"github.com/spf13/viper"
 
-	"github.com/alittlebrighter/coach/gen/models"
-	"github.com/alittlebrighter/coach/platforms"
-	"github.com/alittlebrighter/coach/storage/database"
+	"github.com/alittlebrighter/coach-pro/gen/models"
+	"github.com/alittlebrighter/coach-pro/platforms"
+	"github.com/alittlebrighter/coach-pro/storage/database"
 )
 
 func SaveHistory(line string, dupeCount int, store HistoryStore) (promptDoc bool, err error) {
@@ -23,11 +24,17 @@ func SaveHistory(line string, dupeCount int, store HistoryStore) (promptDoc bool
 		}
 	}
 
+	user, err := user.Current()
+	if err != nil {
+		return false, err
+	}
+
 	hLine := models.HistoryRecord{
 		Id:          RandomID(),
 		Timestamp:   ptypes.TimestampNow(),
 		FullCommand: cmd,
 		Tty:         Shell.GetTTY(),
+		User:        user.Username,
 	}
 	if len(hLine.GetFullCommand()) == 0 || strings.HasPrefix(hLine.GetFullCommand(), "coach") {
 		return
@@ -54,6 +61,13 @@ func SaveHistory(line string, dupeCount int, store HistoryStore) (promptDoc bool
 func GetRecentHistory(n int, allSessions bool, store HistoryStore) (lines []models.HistoryRecord, err error) {
 	if n <= 0 {
 		err = errors.New("invalid input")
+		return
+	}
+
+	var currentUser *user.User
+	currentUser, err = user.Current()
+	if err != nil {
+		return
 	}
 
 	var tty string
@@ -63,13 +77,13 @@ func GetRecentHistory(n int, allSessions bool, store HistoryStore) (lines []mode
 		tty = Shell.GetTTY()
 	}
 
-	lines, err = store.GetRecent(tty, n)
+	lines, err = store.GetRecent(tty, currentUser.Username, n)
 	return
 }
 
 type HistoryStore interface {
 	Save(id []byte, value interface{}, overwrite bool) error
 	CheckDupeCmds(string, int) bool
-	GetRecent(tty string, n int) ([]models.HistoryRecord, error)
+	GetRecent(tty string, username string, n int) ([]models.HistoryRecord, error)
 	PruneHistory(max int) error
 }

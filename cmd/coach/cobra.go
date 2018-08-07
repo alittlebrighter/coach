@@ -8,7 +8,8 @@ import (
 	"io/ioutil"
 	"os"
 
-	"github.com/alittlebrighter/coach/storage/database"
+	"github.com/alittlebrighter/coach-pro/platforms"
+	"github.com/alittlebrighter/coach-pro/storage/database"
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -21,27 +22,26 @@ var (
 
 func main() {
 	// Find home directory.
-	var err error
-	home, err = homedir.Dir()
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+	envSetHome := os.Getenv("COACH_HOME")
+	defaultAppDir := platforms.DefaultHomeDir()
+	_, sysErr := os.Stat(defaultAppDir + "/coach")
+	switch {
+	case len(envSetHome) > 0:
+		home = envSetHome
+	case sysErr == nil:
+		home = defaultAppDir + "/coach"
+	default:
+		homeDir, _ := homedir.Dir()
+		home = homeDir + "/.coach"
+		os.Mkdir(home, os.ModePerm)
 	}
-	home = home + "/.coach"
 	dbpath = home + "/coach.db"
-
-	os.Mkdir(home, os.ModePerm)
-
-	if err != nil {
-		fmt.Println("Could not find or create '"+home+"'.  ERROR:", err)
-		os.Exit(1)
-	}
 
 	rootCmd := &cobra.Command{
 		Use:   "coach",
 		Short: "A tool to help you save and document common commands executed on the command line.",
 		Long: fmt.Sprintf("%s\nAuthor: %s\n\nConfiguration: %s\nScript DB: %s",
-			"Coach: Save, document, query, and run all of your scripts.",
+			"Coach PRO: Save, document, query, and run all of your scripts.",
 			"Adam Bright <brightam1@gmail.com>",
 			home+"/config.yaml",
 			home+"/coach.db",
@@ -99,8 +99,14 @@ func main() {
 
 	cobra.OnInitialize(initConfig)
 
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Printf("ERROR: Something went wrong.  Do you have permissions to access '%s' and its contents?\n", home)
+			os.Exit(1)
+		}
+	}()
 	if err := rootCmd.Execute(); err != nil {
-		fmt.Println(err)
+		handleErr(err)
 		os.Exit(1)
 	}
 }

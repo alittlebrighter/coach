@@ -13,7 +13,7 @@ import (
 	"github.com/json-iterator/go" // for full (de)serialization
 	"github.com/rs/xid"
 
-	"github.com/alittlebrighter/coach/gen/models"
+	"github.com/alittlebrighter/coach-pro/gen/models"
 )
 
 const Wildcard = "?"
@@ -93,7 +93,7 @@ func CleanseCommand(command string) string {
 }
 
 // GetRecent retrieves the last count (arg) lines of history from specified tty (arg).
-func (b *BoltDB) GetRecent(tty string, count int) ([]models.HistoryRecord, error) {
+func (b *BoltDB) GetRecent(tty, username string, count int) ([]models.HistoryRecord, error) {
 	records := []models.HistoryRecord{}
 	b.db.View(func(tx *bolt.Tx) error {
 		// Assume bucket exists and has keys
@@ -105,11 +105,12 @@ func (b *BoltDB) GetRecent(tty string, count int) ([]models.HistoryRecord, error
 					continue
 				}
 			}
+			if lineUser, err := jsonparser.GetUnsafeString(v, "user"); err != nil || lineUser != username {
+				continue
+			}
 
 			var line models.HistoryRecord
-			var err error
-			err = json.Unmarshal(v, &line)
-			if err != nil {
+			if err := json.Unmarshal(v, &line); err != nil {
 				continue
 			}
 

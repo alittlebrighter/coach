@@ -12,6 +12,10 @@ import (
 
 const DefaultShell = "windowsCMD"
 
+func DefaultHomeDir() string {
+	return strings.Replace(os.Getenv("ProgramFiles"), "\\", "/")
+}
+
 func Newline(count uint) string {
 	if count <= 1 {
 		return "\r\n"

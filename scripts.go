@@ -8,10 +8,13 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"os/user"
 	"strings"
 
-	"github.com/alittlebrighter/coach/gen/models"
-	"github.com/alittlebrighter/coach/platforms"
+	"github.com/golang/protobuf/ptypes"
+
+	"github.com/alittlebrighter/coach-pro/gen/models"
+	"github.com/alittlebrighter/coach-pro/platforms"
 )
 
 func QueryScripts(query string, store ScriptStore) (scripts []models.DocumentedScript, err error) {
@@ -28,6 +31,20 @@ func SaveScript(toSave models.DocumentedScript, overwrite bool, store ScriptStor
 	if toSave.GetScript() == nil || len(strings.TrimSpace(toSave.GetScript().GetContent())) == 0 {
 		return errors.New("no script to save")
 	}
+
+	if toSave.GetAuditLog() == nil {
+		toSave.AuditLog = new(models.AuditLog)
+	}
+
+	currentUser, _ := user.Current()
+	now := ptypes.TimestampNow()
+	if len(toSave.GetAuditLog().GetCreatedBy()) == 0 {
+		toSave.AuditLog.Created = now
+		toSave.AuditLog.CreatedBy = currentUser.Username
+	}
+
+	toSave.AuditLog.Updated = now
+	toSave.AuditLog.UpdatedBy = currentUser.Username
 
 	toSave.Alias = strings.TrimSpace(toSave.GetAlias())
 	for i := range toSave.GetTags() {

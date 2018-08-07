@@ -4,4 +4,4 @@ go:
   - "1.10.3"
 
 install:
-  - go install github.com/alittlebrighter/coach/cmd/coach
+  - go install github.com/alittlebrighter/coach-pro/cmd/coach

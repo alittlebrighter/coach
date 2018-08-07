@@ -15,11 +15,19 @@ message Script {
     string shell = 3;
 }
 
+message AuditLog {
+    google.protobuf.Timestamp created = 1;
+    string createdBy = 2;
+    google.protobuf.Timestamp updated = 3;
+    string updatedBy = 4;
+}
+
 message HistoryRecord {
     bytes id = 1;
     string fullCommand = 2;
     string tty = 3;
     google.protobuf.Timestamp timestamp = 4;
+    string user = 5;
 }
 
 message DocumentedScript {
@@ -28,6 +36,7 @@ message DocumentedScript {
     string alias = 3;
     repeated string tags = 4;
     string documentation = 5;
+    AuditLog auditLog = 6;
 }
 
 message CommandContext {
