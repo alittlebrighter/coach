@@ -72,3 +72,11 @@ func (b *Bash) OpenEditor(filename string) error {
 	cmd.Stdin, cmd.Stdout, cmd.Stderr = os.Stdin, os.Stdout, os.Stderr
 	return cmd.Run()
 }
+
+func (b *Bash) FileExtension() string {
+	return "sh"
+}
+
+func (b *Bash) LineComment() string {
+	return "#"
+}

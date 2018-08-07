@@ -36,20 +36,14 @@ func GetEditorCmd() string {
 	return editor
 }
 
-func GetShell(name string) Shell {
-	if len(name) == 0 {
-		name = IdentifyShell()
-	}
-
+func GetPlatformShell(name string) Shell {
 	switch {
 	case strings.Contains(strings.ToLower(name), "powershell"):
 		return new(PowerShell)
 	case strings.ToLower(name) == "windowscmd":
 		return new(WindowsCMD)
-	case name == "bash":
-		return new(Bash)
 	default:
-		return &AnyShell{Name: name}
+		return nil
 	}
 }
 
@@ -71,6 +65,14 @@ func (p *PowerShell) BuildCommand(script string) (*exec.Cmd, func(), error) {
 	return exec.Command("PowerShell.exe", tmpfile.Name()), cleanup, nil
 }
 
+func (p *PowerShell) LineComment() string {
+	return "#"
+}
+
+func (p *PowerShell) FileExtension() string {
+	return "ps1"
+}
+
 type WindowsCMD struct{}
 
 func (c *WindowsCMD) BuildCommand(script string) (*exec.Cmd, func(), error) {
@@ -87,4 +89,12 @@ func (c *WindowsCMD) BuildCommand(script string) (*exec.Cmd, func(), error) {
 	}
 
 	return exec.Command(tmpfile.Name()), cleanup, nil
+}
+
+func (c *WindowsCMD) LineComment() string {
+	return "REM"
+}
+
+func (c *WindowsCMD) FileExtension() string {
+	return ".bat"
 }

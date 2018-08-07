@@ -26,18 +26,12 @@ func GetEditorCmd() string {
 	return editor
 }
 
-func GetShell(name string) Shell {
-	if len(name) == 0 {
-		name = IdentifyShell()
-	}
-
+func GetPlatformShell(name string) Shell {
 	switch {
 	case name == "dash":
-		fallthrough
-	case name == "bash":
 		return new(Bash)
 	default:
-		return &AnyShell{Name: name}
+		return nil
 	}
 }
 

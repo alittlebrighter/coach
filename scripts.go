@@ -9,9 +9,11 @@ import (
 	"io/ioutil"
 	"os"
 	"os/user"
+	"path/filepath"
 	"strings"
 
 	"github.com/golang/protobuf/ptypes"
+	"github.com/rs/xid"
 
 	"github.com/alittlebrighter/coach-pro/gen/models"
 	"github.com/alittlebrighter/coach-pro/platforms"
@@ -80,11 +82,22 @@ func EditScript(alias string, store ScriptStore) (*models.DocumentedScript, erro
 		}
 	}
 
-	tmpfile, ferr := ioutil.TempFile("", "coach")
-	if ferr != nil {
-		return nil, ferr
-	}
+	shell := platforms.GetShell(script.GetScript().GetShell())
+
+	var tmpfile *os.File
 	var err error
+	for i := 0; i < 10; i++ {
+		name := filepath.Join(os.TempDir(), "coach"+xid.New().String()+"."+shell.FileExtension())
+		tmpfile, err = os.OpenFile(name, os.O_RDWR|os.O_CREATE|os.O_EXCL, 0600)
+		if os.IsExist(err) {
+			continue
+		}
+		break
+	}
+	if err != nil {
+		return nil, err
+	}
+
 	defer func() {
 		if err == nil {
 			os.Remove(tmpfile.Name()) // clean up
@@ -145,14 +158,20 @@ type ScriptStore interface {
 const doNotEditLine = "!DO NOT EDIT THIS LINE!"
 
 func MarshalEdit(s models.DocumentedScript) []byte {
+	c := platforms.GetShell(s.GetScript().GetShell()).LineComment()
+	nl := platforms.Newline(1)
+
 	var contents strings.Builder
-	contents.WriteString("-ALIAS- = " + s.GetAlias() + platforms.Newline(1))
-	contents.WriteString(" -TAGS- = " + strings.Join(s.GetTags(), ",") + platforms.Newline(1))
-	contents.WriteString("-SHELL- = " + s.GetScript().GetShell() + platforms.Newline(2))
-	contents.WriteString("-DOCUMENTATION- " + doNotEditLine + platforms.Newline(1))
-	contents.WriteString(s.GetDocumentation() + platforms.Newline(2))
-	contents.WriteString("-SCRIPT- " + doNotEditLine + platforms.Newline(1))
-	contents.WriteString(strings.TrimSpace(s.GetScript().GetContent()) + platforms.Newline(1))
+	contents.WriteString(c + "-ALIAS- = " + s.GetAlias() + nl)
+	contents.WriteString(c + " -TAGS- = " + strings.Join(s.GetTags(), ",") + nl)
+	contents.WriteString(c + "-SHELL- = " + s.GetScript().GetShell() + nl + c + nl)
+	contents.WriteString(c + "-DOCUMENTATION- " + doNotEditLine + nl)
+	for _, line := range strings.Split(s.GetDocumentation(), nl) {
+		contents.WriteString(c + " " + strings.TrimRight(line, "\t ") + nl)
+	}
+	contents.WriteString(c + nl)
+	contents.WriteString(c + "-SCRIPT- " + doNotEditLine + nl)
+	contents.WriteString(strings.TrimSpace(s.GetScript().GetContent()) + nl)
 	return []byte(contents.String())
 }
 
@@ -174,12 +193,12 @@ func UnmarshalEdit(contents string) (ds models.DocumentedScript, err error) {
 		}
 
 		switch {
-		case strings.HasPrefix(part, "-ALIAS- ="):
+		case strings.Contains(part, "-ALIAS- ="):
 			ds.Alias = strings.TrimSpace(strings.Split(part, "=")[1])
 
 			inDoc, docStarted = false, false
 			inScript, scriptStarted = false, false
-		case strings.HasPrefix(part, "-TAGS- ="):
+		case strings.Contains(part, "-TAGS- ="):
 			tags := strings.Split(strings.Split(part, "=")[1], ",")
 			for i := range tags {
 				tags[i] = strings.TrimSpace(tags[i])
@@ -188,16 +207,16 @@ func UnmarshalEdit(contents string) (ds models.DocumentedScript, err error) {
 
 			inDoc, docStarted = false, false
 			inScript, scriptStarted = false, false
-		case strings.HasPrefix(part, "-SHELL- ="):
+		case strings.Contains(part, "-SHELL- ="):
 			ds.Script.Shell = strings.TrimSpace(strings.Split(part, "=")[1])
 
 			inDoc, docStarted = false, false
 			inScript, scriptStarted = false, false
-		case strings.HasPrefix(part, "-DOCUMENTATION-"):
+		case strings.Contains(part, "-DOCUMENTATION- "+doNotEditLine):
 			inDoc, docStarted = true, false
 			inScript, scriptStarted = false, false
 			continue
-		case strings.HasPrefix(part, "-SCRIPT-"):
+		case strings.Contains(part, "-SCRIPT- "+doNotEditLine):
 			inDoc, docStarted = false, false
 			inScript, scriptStarted = true, false
 			continue
@@ -208,7 +227,7 @@ func UnmarshalEdit(contents string) (ds models.DocumentedScript, err error) {
 		}
 
 		if inDoc {
-			ds.Documentation += strings.TrimRight(p, "\t ") + platforms.Newline(1)
+			ds.Documentation += strings.TrimRight(strings.Replace(strings.TrimLeft(p, "/#"), " ", "", 1), "\t ") + platforms.Newline(1)
 		} else if inScript {
 			ds.Script.Content += p + platforms.Newline(1)
 		}

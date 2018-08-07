@@ -9,16 +9,16 @@ import (
 )
 
 var (
-	scriptFile = `-ALIAS- = myscript
- -TAGS- = cheese,whiskey,mashed potatoes
--SHELL- = bash
+	scriptFile = `#-ALIAS- = myscript
+# -TAGS- = cheese,whiskey,mashed potatoes
+#-SHELL- = bash
 
--DOCUMENTATION- ` + doNotEditLine + `
-A simple script that does my things.
-
-	A second line.
-
--SCRIPT- ` + doNotEditLine + `
+#-DOCUMENTATION- ` + doNotEditLine + `
+# A simple script that does my things.
+#
+# 	A second line.
+# 
+#-SCRIPT- ` + doNotEditLine + `
 ls -a
 	cat ~/.bashrc | grep "BILLY BOB"
 
