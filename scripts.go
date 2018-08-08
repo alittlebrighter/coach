@@ -19,6 +19,8 @@ import (
 	"github.com/alittlebrighter/coach-pro/platforms"
 )
 
+const Header = "exported from COACH - https://github.com/alittlebrighter/coach"
+
 func QueryScripts(query string, store ScriptStore) (scripts []models.DocumentedScript, err error) {
 	if len(query) == 0 {
 		err = errors.New("no query specified")
@@ -234,5 +236,33 @@ func UnmarshalEdit(contents string) (ds models.DocumentedScript, err error) {
 	}
 	ds.Documentation = strings.TrimSpace(ds.GetDocumentation())
 	ds.Script.Content = strings.TrimSpace(ds.GetScript().GetContent()) + platforms.Newline(1)
+	return
+}
+
+func UnmarshalLine(line string, ds *models.DocumentedScript) (processed bool) {
+	switch part := strings.TrimSpace(line); {
+	case strings.Contains(part, "-ALIAS- ="):
+		ds.Alias = strings.TrimSpace(strings.Split(part, "=")[1])
+
+		processed = true
+	case strings.Contains(part, "-TAGS- ="):
+		tags := strings.Split(strings.Split(part, "=")[1], ",")
+		for i := range tags {
+			tags[i] = strings.TrimSpace(tags[i])
+		}
+		ds.Tags = tags
+		processed = true
+	case strings.Contains(part, "-SHELL- ="):
+		ds.Script.Shell = strings.TrimSpace(strings.Split(part, "=")[1])
+		processed = true
+	case strings.Contains(part, Header):
+		fallthrough
+	case strings.Contains(part, "-DOCUMENTATION- "+doNotEditLine):
+		fallthrough
+	case strings.Contains(part, "-SCRIPT- "+doNotEditLine):
+		processed = true
+	default:
+		processed = false
+	}
 	return
 }

@@ -34,8 +34,9 @@ func main() {
 			home+"/config.yaml",
 			home+"/coach.db",
 		),
-		Run: appMain,
+		Run: run,
 	}
+	rootCmd.Flags().BoolP("confirm", "c", false, "Run the command immediately without review.")
 	/*
 		sessionCmd := &cobra.Command{
 			Use:   "session",

@@ -14,8 +14,6 @@ import (
 	"github.com/rs/xid"
 )
 
-const header = "exported from COACH (https://github.com/alittlebrighter/coach)"
-
 func importScripts(dir string, store *database.BoltDB) {
 	_, err := os.Stat(dir)
 	if err != nil {
@@ -49,39 +47,6 @@ func importScripts(dir string, store *database.BoltDB) {
 
 		return nil
 	})
-}
-
-func exportScripts(dir string, store *database.BoltDB) {
-	scripts, err := coach.QueryScripts(database.Wildcard, store)
-	if err != nil {
-		handleErr(err)
-		return
-	}
-
-	for _, script := range scripts {
-		shell := platforms.GetShell(script.GetScript().GetShell())
-
-		var shebang string
-		if !strings.Contains(strings.ToLower(script.GetScript().GetShell()), "powershell") ||
-			strings.ToLower(script.GetScript().GetShell()) != "windowscmd" {
-			shebang = "#!/usr/bin/env " + script.GetScript().GetShell()
-		}
-
-		path := filepath.Join(append([]string{dir}, strings.Split(script.GetAlias(), ".")...)...)
-		fullPath := ""
-		for _, subdir := range strings.Split(path[:strings.LastIndex(path, "/")], "/") {
-			fullPath += subdir + "/"
-			os.Mkdir(fullPath, 0700)
-		}
-
-		file, err := os.OpenFile(path+"."+shell.FileExtension(), os.O_CREATE|os.O_RDWR, os.ModePerm)
-		handleErr(err)
-
-		file.WriteString(shebang + platforms.Newline(2))
-		file.WriteString(shell.LineComment() + " " + header + platforms.Newline(2))
-		file.Write(coach.MarshalEdit(script))
-		file.Close()
-	}
 }
 
 func ParseFile(path, base string, size int64) (*models.DocumentedScript, error) {
@@ -127,15 +92,60 @@ func ParseFile(path, base string, size int64) (*models.DocumentedScript, error) 
 				script.Script.Shell = interpreter
 				shell = platforms.GetShell(interpreter)
 			}
+		case coach.UnmarshalLine(trimmed, script):
+			// no-op
 		case strings.HasPrefix(trimmed, shell.LineComment()):
-			script.Documentation += strings.TrimLeft(line, " \t"+shell.LineComment()) + platforms.Newline(1)
+			docLine := strings.TrimLeft(line, " \t"+shell.LineComment()) + platforms.Newline(1)
+			if len(strings.TrimSpace(docLine)) > 0 {
+				fmt.Println(len(strings.TrimSpace(docLine)), docLine)
+				script.Documentation += docLine
+			}
 			fallthrough
 		default:
 			script.Script.Content += line + platforms.Newline(1)
 		}
 	}
+	script.Documentation = strings.TrimSpace(script.GetDocumentation())
 
 	return script, nil
+}
+
+func exportScripts(dir string, store *database.BoltDB) {
+	scripts, err := coach.QueryScripts(database.Wildcard, store)
+	if err != nil {
+		handleErr(err)
+		return
+	}
+
+	for _, script := range scripts {
+		shell := platforms.GetShell(script.GetScript().GetShell())
+
+		var shebang string
+		if !strings.Contains(strings.ToLower(script.GetScript().GetShell()), "powershell") ||
+			strings.ToLower(script.GetScript().GetShell()) != "windowscmd" {
+			shebang = "#!/usr/bin/env " + script.GetScript().GetShell()
+		}
+
+		path := filepath.Join(append([]string{dir}, strings.Split(script.GetAlias(), ".")...)...)
+		fullPath := ""
+		lastSlash := strings.LastIndex(path, "/")
+		allButLastDir := path
+		if lastSlash != -1 {
+			allButLastDir = path[:lastSlash]
+		}
+		for _, subdir := range strings.Split(allButLastDir, "/") {
+			fullPath += subdir + "/"
+			os.Mkdir(fullPath, 0700)
+		}
+
+		file, err := os.OpenFile(path+"."+shell.FileExtension(), os.O_CREATE|os.O_RDWR, os.ModePerm)
+		handleErr(err)
+
+		file.WriteString(shebang + platforms.Newline(2))
+		file.WriteString(shell.LineComment() + " " + coach.Header + platforms.Newline(2))
+		file.Write(coach.MarshalEdit(script))
+		file.Close()
+	}
 }
 
 func handleErr(e error) {
