@@ -51,6 +51,25 @@ func GetShell(name string) Shell {
 	}
 }
 
+func ShellNameFromExt(fileExt string) string {
+	switch fileExt {
+	case "sh":
+		return "bash"
+	case "py":
+		return "python"
+	case "js":
+		return "nodejs"
+	case "rb":
+		return "ruby"
+	case "ps1":
+		return "powershell"
+	case "bat":
+		return "windowsCMD"
+	default:
+		return ""
+	}
+}
+
 func WriteTmpFile(script string) (string, func(), error) {
 	tmpfile, err := ioutil.TempFile("", "coach")
 	if err != nil {

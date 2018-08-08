@@ -1,20 +1,54 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 
 	coach "github.com/alittlebrighter/coach-pro"
+	"github.com/alittlebrighter/coach-pro/gen/models"
 	"github.com/alittlebrighter/coach-pro/platforms"
 	"github.com/alittlebrighter/coach-pro/storage/database"
+	"github.com/rs/xid"
 )
 
 const header = "exported from COACH (https://github.com/alittlebrighter/coach)"
 
 func importScripts(dir string, store *database.BoltDB) {
+	_, err := os.Stat(dir)
+	if err != nil {
+		handleErr(err)
+		return
+	}
 
+	base := dir
+	lastSlash := strings.LastIndex(dir, "/")
+	if lastSlash >= 0 {
+		base = dir[lastSlash+1:]
+	}
+
+	filepath.Walk(dir, func(p string, info os.FileInfo, err error) error {
+		if info.IsDir() {
+			return nil
+		}
+
+		script, err := ParseFile(p, base, info.Size())
+		if err != nil {
+			handleErr(err)
+			return err
+		}
+		for err = coach.SaveScript(*script, false, store); err == database.ErrAlreadyExists; err = coach.SaveScript(*script, false, store) {
+			script.Alias += "-" + xid.New().String()
+		}
+		if err != nil {
+			handleErr(err)
+			return err
+		}
+
+		return nil
+	})
 }
 
 func exportScripts(dir string, store *database.BoltDB) {
@@ -26,7 +60,12 @@ func exportScripts(dir string, store *database.BoltDB) {
 
 	for _, script := range scripts {
 		shell := platforms.GetShell(script.GetScript().GetShell())
-		shebang := "#!/usr/bin/env " + script.GetScript().GetShell()
+
+		var shebang string
+		if !strings.Contains(strings.ToLower(script.GetScript().GetShell()), "powershell") ||
+			strings.ToLower(script.GetScript().GetShell()) != "windowscmd" {
+			shebang = "#!/usr/bin/env " + script.GetScript().GetShell()
+		}
 
 		path := filepath.Join(append([]string{dir}, strings.Split(script.GetAlias(), ".")...)...)
 		fullPath := ""
@@ -43,6 +82,60 @@ func exportScripts(dir string, store *database.BoltDB) {
 		file.Write(coach.MarshalEdit(script))
 		file.Close()
 	}
+}
+
+func ParseFile(path, base string, size int64) (*models.DocumentedScript, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+
+	script := new(models.DocumentedScript)
+
+	var ext string
+	parts := strings.Split(path, ".")
+	if len(parts) < 2 {
+		ext = database.Wildcard
+	} else {
+		ext = parts[1]
+	}
+	fromBase := parts[0][strings.Index(parts[0], base):]
+	pathParts := strings.Split(fromBase, "/")
+	script.Alias = strings.Join(pathParts, ".")
+	script.Tags = pathParts
+	script.Script = &models.Script{Shell: platforms.ShellNameFromExt(ext)}
+
+	data := make([]byte, size)
+	_, err = f.Read(data)
+	contents := string(data)
+	if len(strings.TrimSpace(contents)) == 0 {
+		return nil, errors.New("no content")
+	}
+
+	shell := platforms.GetShell(script.GetScript().GetShell())
+	for _, line := range strings.Split(contents, platforms.Newline(1)) {
+		trimmed := strings.TrimSpace(line)
+
+		switch {
+		case strings.HasPrefix(trimmed, "#!"):
+			parts := strings.Split(trimmed, " ")
+			interpreter := parts[0][strings.LastIndex(parts[0], "/")+1:]
+			if interpreter == "env" {
+				script.Script.Shell = parts[1]
+				shell = platforms.GetShell(parts[1])
+			} else {
+				script.Script.Shell = interpreter
+				shell = platforms.GetShell(interpreter)
+			}
+		case strings.HasPrefix(trimmed, shell.LineComment()):
+			script.Documentation += strings.TrimLeft(line, " \t"+shell.LineComment()) + platforms.Newline(1)
+			fallthrough
+		default:
+			script.Script.Content += line + platforms.Newline(1)
+		}
+	}
+
+	return script, nil
 }
 
 func handleErr(e error) {
