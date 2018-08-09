@@ -73,8 +73,7 @@ func SaveScript(toSave models.DocumentedScript, overwrite bool, store ScriptStor
 	return
 }
 
-func EditScript(alias string) (*models.DocumentedScript, error) {
-	store := GetStore(true)
+func EditScript(alias string, store ScriptStore) (*models.DocumentedScript, error) {
 	script := store.GetScript([]byte(alias))
 	store.Close()
 	if script == nil {
@@ -157,7 +156,7 @@ type ScriptStore interface {
 	QueryScripts(...string) ([]models.DocumentedScript, error)
 	DeleteScript(id []byte) error
 	IgnoreStore
-	//Closable
+	Closable
 }
 
 const doNotEditLine = "!DO NOT EDIT THIS LINE!"

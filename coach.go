@@ -5,6 +5,7 @@
 package coach
 
 import (
+	"fmt"
 	"os"
 
 	homedir "github.com/mitchellh/go-homedir"
@@ -33,7 +34,11 @@ type Closable interface {
 }
 
 func GetStore(readonly bool) *database.BoltDB {
-	store, _ := database.NewBoltDB(DBPath, readonly)
+	store, err := database.NewBoltDB(DBPath, readonly)
+	if err != nil {
+		fmt.Println("could not access db:", err)
+		os.Exit(1)
+	}
 	return store
 }
 

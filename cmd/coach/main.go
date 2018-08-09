@@ -35,11 +35,7 @@ func history(cmd *cobra.Command, args []string) {
 
 	switch {
 	case rErr == nil && len(record) > 0:
-		store, err := database.NewBoltDB(coach.DBPath, false)
-		if err != nil {
-			handleErr(err)
-			return
-		}
+		store := coach.GetStore(false)
 		defer store.Close()
 
 		dupeCount := viper.GetInt("history.reps-pre-doc-prompt")
@@ -51,14 +47,11 @@ func history(cmd *cobra.Command, args []string) {
 				dupeCount)
 		}
 	default:
-		store, err := database.NewBoltDB(coach.DBPath, true)
-		if err != nil {
-			handleErr(err)
-			return
-		}
+		store := coach.GetStore(true)
 		defer store.Close()
 
 		count := 10
+		var err error
 		if args != nil && len(args) >= 1 {
 			if count, err = strconv.Atoi(args[0]); err != nil {
 				count = 10
@@ -96,12 +89,7 @@ func doc(cmd *cobra.Command, args []string) {
 
 	switch {
 	case len(args) >= 3:
-		store, err := database.NewBoltDB(coach.DBPath, false)
-		if err != nil {
-			handleErr(err)
-			return
-		}
-		defer store.Close()
+		store := coach.GetStore(false)
 
 		if cErr != nil || len(script) == 0 {
 			if lines, err := coach.GetRecentHistory(hLines, false, store); err == nil && len(lines) > 0 {
@@ -116,7 +104,7 @@ func doc(cmd *cobra.Command, args []string) {
 			fmt.Println("You're shell could not be identified.  Using 'bash' for now.\nRun `coach doc -e " + args[0] + "` to edit.")
 			shell = "bash"
 		}
-		err = coach.SaveScript(models.DocumentedScript{
+		err := coach.SaveScript(models.DocumentedScript{
 			Alias:         args[0],
 			Tags:          strings.Split(args[1], ","),
 			Documentation: strings.Join(args[2:], " "),
@@ -126,8 +114,9 @@ func doc(cmd *cobra.Command, args []string) {
 			handleErr(err)
 			return
 		}
+		store.Close()
 	case eErr == nil && len(edit) > 0:
-		newScript, err := coach.EditScript(edit)
+		newScript, err := coach.EditScript(edit, coach.GetStore(true))
 		if err != nil {
 			handleErr(err)
 			return
@@ -174,17 +163,13 @@ func doc(cmd *cobra.Command, args []string) {
 			return
 		}
 	case len(delete) > 0:
-		store, err := database.NewBoltDB(coach.DBPath, false)
-		if err != nil {
-			handleErr(err)
-			return
-		}
-		defer store.Close()
-
+		store := coach.GetStore(true)
 		if store.GetScript([]byte(strings.TrimSpace(delete))) == nil {
 			handleErr(database.ErrNotFound)
+			store.Close()
 			return
 		}
+		store.Close()
 
 		fmt.Printf("Type '%s' again to delete: ", delete)
 		in, err := bufio.NewReader(os.Stdin).ReadString('\n')
@@ -195,16 +180,14 @@ func doc(cmd *cobra.Command, args []string) {
 		}
 
 		fmt.Printf("Deleting '%s' now.\n", input[0])
+		store = coach.GetStore(false)
+		defer store.Close()
 		if err := store.DeleteScript([]byte(input[0])); err != nil {
 			handleErr(err)
 			return
 		}
 	case qErr == nil && len(query) > 0:
-		store, err := database.NewBoltDB(coach.DBPath, true)
-		if err != nil {
-			handleErr(err)
-			return
-		}
+		store := coach.GetStore(true)
 		defer store.Close()
 
 		cmds, err := coach.QueryScripts(query, store)
@@ -231,14 +214,9 @@ func doc(cmd *cobra.Command, args []string) {
 }
 
 func ignore(cmd *cobra.Command, args []string) {
-	/*
-		store, err := database.NewBoltDB(dbpath, false)
-		if err != nil {
-			handleErr(err)
-			return
-		}
-		defer store.Close()
-	*/
+	store := coach.GetStore(false)
+	defer store.Close()
+
 	lineCount, err := cmd.Flags().GetInt("history-lines")
 	if err != nil {
 		lineCount = 1
@@ -246,7 +224,7 @@ func ignore(cmd *cobra.Command, args []string) {
 	allVariations, _ := cmd.Flags().GetBool("all")
 	remove, _ := cmd.Flags().GetBool("remove")
 
-	err = coach.IgnoreHistory(lineCount, allVariations, remove)
+	err = coach.IgnoreHistory(lineCount, allVariations, remove, store)
 	handleErr(err)
 	return
 }

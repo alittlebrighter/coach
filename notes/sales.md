@@ -2,15 +2,16 @@
 
 ### Targets
 - IT Dept at large corp (i.e. Giant Eagle)
-- Software consulting comapnies (i.e. Build in Motion)
+- Software consulting companies (i.e. Build in Motion)
 - college professors (maybe)
 - anybody doing DevOps
 
 ### Benefits
 - share knowledge across team, make juniors(/students?) more productive
 - eliminate bus-factor
+- speed up fire fighting
 - standardize ways of doing things on command line
-- (consulting) ship coach.db as deliverable as way to disover scripts to maintain new software
+- (consulting) ship coach.db with open source coach as deliverable as way to deliver scripts to maintain new software
 - avoid trips to StackOverflow/Google
 
 ### Proposed Features
@@ -18,6 +19,4 @@
 - central server
 - identify multi-line repetitions
 - directory map (alias important directorys)
-- ignore all variations of commands if not compound (cd, cat, ls, etc.)
-- script agnostic way of getting runtime variables
 - pre and post append/run scripts

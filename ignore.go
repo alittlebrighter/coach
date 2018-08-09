@@ -9,9 +9,7 @@ import (
 	"github.com/alittlebrighter/coach-pro/platforms"
 )
 
-func IgnoreHistory(lineCount int, allVariations, remove bool) error {
-	store := GetStore(false)
-
+func IgnoreHistory(lineCount int, allVariations, remove bool, store IgnoreStore) error {
 	processLine := func(l string) string {
 		return l
 	}
