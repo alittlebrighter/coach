@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"time"
 
 	coach "github.com/alittlebrighter/coach-pro"
 	"github.com/alittlebrighter/coach-pro/storage/database"
@@ -98,19 +97,9 @@ func main() {
 		}
 	}()
 
-	timer := time.NewTimer(2 * time.Second)
-	runErr := make(chan error)
-	go func() {
-		runErr <- rootCmd.Execute()
-	}()
-	select {
-	case err := <-runErr:
-		if err != nil {
-			handleErr(err)
-			os.Exit(1)
-		}
-	case <-timer.C:
-		// timed out
+	if err := rootCmd.Execute(); err != nil {
+		handleErr(err)
+		os.Exit(1)
 	}
 }
 
