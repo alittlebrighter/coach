@@ -35,7 +35,7 @@ func history(cmd *cobra.Command, args []string) {
 
 	switch {
 	case rErr == nil && len(record) > 0:
-		store, err := database.NewBoltDB(dbpath, false)
+		store, err := database.NewBoltDB(coach.DBPath, false)
 		if err != nil {
 			handleErr(err)
 			return
@@ -51,7 +51,7 @@ func history(cmd *cobra.Command, args []string) {
 				dupeCount)
 		}
 	default:
-		store, err := database.NewBoltDB(dbpath, true)
+		store, err := database.NewBoltDB(coach.DBPath, true)
 		if err != nil {
 			handleErr(err)
 			return
@@ -96,7 +96,7 @@ func doc(cmd *cobra.Command, args []string) {
 
 	switch {
 	case len(args) >= 3:
-		store, err := database.NewBoltDB(dbpath, false)
+		store, err := database.NewBoltDB(coach.DBPath, false)
 		if err != nil {
 			handleErr(err)
 			return
@@ -127,14 +127,7 @@ func doc(cmd *cobra.Command, args []string) {
 			return
 		}
 	case eErr == nil && len(edit) > 0:
-		store, err := database.NewBoltDB(dbpath, false)
-		if err != nil {
-			handleErr(err)
-			return
-		}
-		defer store.Close()
-
-		newScript, err := coach.EditScript(edit, store)
+		newScript, err := coach.EditScript(edit)
 		if err != nil {
 			handleErr(err)
 			return
@@ -146,6 +139,9 @@ func doc(cmd *cobra.Command, args []string) {
 		}
 
 		save := func(ovrwrt bool) error {
+			store := coach.GetStore(false)
+			defer store.Close()
+
 			err := coach.SaveScript(*newScript, ovrwrt, store)
 
 			if newScript.GetAlias() != edit && err == nil {
@@ -178,7 +174,7 @@ func doc(cmd *cobra.Command, args []string) {
 			return
 		}
 	case len(delete) > 0:
-		store, err := database.NewBoltDB(dbpath, false)
+		store, err := database.NewBoltDB(coach.DBPath, false)
 		if err != nil {
 			handleErr(err)
 			return
@@ -204,7 +200,7 @@ func doc(cmd *cobra.Command, args []string) {
 			return
 		}
 	case qErr == nil && len(query) > 0:
-		store, err := database.NewBoltDB(dbpath, true)
+		store, err := database.NewBoltDB(coach.DBPath, true)
 		if err != nil {
 			handleErr(err)
 			return
@@ -235,13 +231,14 @@ func doc(cmd *cobra.Command, args []string) {
 }
 
 func ignore(cmd *cobra.Command, args []string) {
-	store, err := database.NewBoltDB(dbpath, false)
-	if err != nil {
-		handleErr(err)
-		return
-	}
-	defer store.Close()
-
+	/*
+		store, err := database.NewBoltDB(dbpath, false)
+		if err != nil {
+			handleErr(err)
+			return
+		}
+		defer store.Close()
+	*/
 	lineCount, err := cmd.Flags().GetInt("history-lines")
 	if err != nil {
 		lineCount = 1
@@ -249,7 +246,7 @@ func ignore(cmd *cobra.Command, args []string) {
 	allVariations, _ := cmd.Flags().GetBool("all")
 	remove, _ := cmd.Flags().GetBool("remove")
 
-	err = coach.IgnoreHistory(lineCount, allVariations, remove, store)
+	err = coach.IgnoreHistory(lineCount, allVariations, remove)
 	handleErr(err)
 	return
 }
@@ -258,14 +255,10 @@ func run(cmd *cobra.Command, args []string) {
 	if args == nil || len(args) == 0 {
 		fmt.Println("No alias specified.")
 	}
-	store, err := database.NewBoltDB(dbpath, false)
-	if err != nil {
-		handleErr(err)
-		return
-	}
-	defer store.Close()
 
+	store := coach.GetStore(true)
 	toRun := store.GetScript([]byte(args[0]))
+	store.Close()
 
 	scriptArgs := []string{}
 	if len(args) > 1 {
@@ -287,20 +280,7 @@ func run(cmd *cobra.Command, args []string) {
 	if err := coach.RunScript(*toRun, scriptArgs); err != nil {
 		handleErr(err)
 	}
-
 }
-
-/*
-func GetStore(readonly bool) func() *database.BoltDB {
-	var store *database.BoltDB
-	return func() *database.BoltDB {
-		if store == nil {
-			return store
-		}
-		return store
-	}
-}
-*/
 
 func handleErr(e error) {
 	if e != nil {

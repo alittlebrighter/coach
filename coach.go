@@ -11,10 +11,12 @@ import (
 	"github.com/rs/xid"
 
 	"github.com/alittlebrighter/coach-pro/platforms"
+	"github.com/alittlebrighter/coach-pro/storage/database"
 )
 
 var (
-	Shell platforms.Platform
+	Shell  platforms.Platform
+	DBPath string
 )
 
 func init() {
@@ -28,6 +30,11 @@ func RandomID() (id []byte) {
 
 type Closable interface {
 	Close() error
+}
+
+func GetStore(readonly bool) *database.BoltDB {
+	store, _ := database.NewBoltDB(DBPath, readonly)
+	return store
 }
 
 func HomeDir() string {

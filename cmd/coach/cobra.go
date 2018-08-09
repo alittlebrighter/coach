@@ -16,14 +16,14 @@ import (
 )
 
 var (
-	home, dbpath string
+	home string
 )
 
 func main() {
 	// Find home directory.
 	home = coach.HomeDir()
 	os.Mkdir(home, os.ModePerm)
-	dbpath = home + "/coach.db"
+	coach.DBPath = home + "/coach.db"
 
 	rootCmd := &cobra.Command{
 		Use:   "coach",

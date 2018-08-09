@@ -51,8 +51,9 @@ func NewBoltDB(path string, readonly bool) (b *BoltDB, err error) {
 }
 
 // Close closes the bolt db file.
-func (d *BoltDB) Close() {
-	d.db.Close()
+func (b *BoltDB) Close() {
+	b.db.Close()
+	b = nil
 }
 
 func (b *BoltDB) initDB() error {

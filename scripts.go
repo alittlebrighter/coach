@@ -73,8 +73,10 @@ func SaveScript(toSave models.DocumentedScript, overwrite bool, store ScriptStor
 	return
 }
 
-func EditScript(alias string, store ScriptStore) (*models.DocumentedScript, error) {
+func EditScript(alias string) (*models.DocumentedScript, error) {
+	store := GetStore(true)
 	script := store.GetScript([]byte(alias))
+	store.Close()
 	if script == nil {
 		script = &models.DocumentedScript{
 			Id:     []byte(alias),
