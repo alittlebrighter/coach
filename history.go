@@ -40,26 +40,46 @@ func SaveHistory(line string, dupeCount int, store HistoryStore) (promptDoc bool
 		return
 	}
 
-	// size of one (1) just so we don't block
+	if err = store.Save(hLine.GetId(), hLine, true); err != nil {
+		return
+	}
+
 	enoughDupes := make(chan bool, 1)
+	ignore := make(chan bool, 1)
 	if dupeCount > 0 {
 		go func() {
-			enoughDupes <- store.CheckDupeCmds(hLine.GetFullCommand(), dupeCount-1)
+			enoughDupes <- store.CheckDupeCmds(hLine.GetFullCommand(), dupeCount)
+		}()
+		go func() {
+			ignore <- ShouldIgnore(hLine.GetFullCommand(), store)
 		}()
 	} else {
 		enoughDupes <- false
 	}
 
-	err = store.Save(hLine.GetId(), hLine, true)
+	var promptDocSet, ignoreSet, shouldIgnore bool
+	for {
+		select {
+		case promptDoc = <-enoughDupes:
+			promptDocSet = true
+		case shouldIgnore = <-ignore:
+			ignoreSet = true
+		}
+
+		if shouldIgnore {
+			promptDoc = false
+			break
+		} else if promptDocSet && ignoreSet {
+			break
+		}
+	}
+
 	store.PruneHistory(viper.GetInt("history.maxlines"))
-
-	promptDoc = <-enoughDupes
-
 	return
 }
 
-func GetRecentHistory(n int, allSessions bool, store HistoryStore) (lines []models.HistoryRecord, err error) {
-	if n <= 0 {
+func GetRecentHistory(n int, allSessions bool, store HistoryGetter) (lines []models.HistoryRecord, err error) {
+	if n == 0 {
 		err = errors.New("invalid input")
 		return
 	}
@@ -84,6 +104,11 @@ func GetRecentHistory(n int, allSessions bool, store HistoryStore) (lines []mode
 type HistoryStore interface {
 	Save(id []byte, value interface{}, overwrite bool) error
 	CheckDupeCmds(string, int) bool
-	GetRecent(tty string, username string, n int) ([]models.HistoryRecord, error)
 	PruneHistory(max int) error
+	HistoryGetter
+	IgnoreChecker
+}
+
+type HistoryGetter interface {
+	GetRecent(tty string, username string, n int) ([]models.HistoryRecord, error)
 }

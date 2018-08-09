@@ -36,6 +36,11 @@ func GetEditorCmd() string {
 	return editor
 }
 
+// TODO
+func IsCompoundStatement(command string) bool {
+	return false
+}
+
 func GetPlatformShell(name string) Shell {
 	switch {
 	case strings.Contains(strings.ToLower(name), "powershell"):

@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/rs/xid"
+
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
@@ -45,8 +46,8 @@ func history(cmd *cobra.Command, args []string) {
 		dupeCount := viper.GetInt("history.reps-pre-doc-prompt")
 
 		if enoughDupes, _ := coach.SaveHistory(record, dupeCount, store); enoughDupes {
-			fmt.Printf("\n---\nThis command has been used %d+ times.\nRun `coach doc [alias] "+
-				"[tags] [comment...]` to save and document this command.\nRun `coach ignore` to silence "+
+			fmt.Printf("\n---\nThis command has been used %d+ times.\n`coach doc [alias] "+
+				"[tags] [comment...]` to save and document this command.\n`coach ignore` to silence "+
 				"this output for this command.\n",
 				dupeCount)
 		}
@@ -72,7 +73,10 @@ func history(cmd *cobra.Command, args []string) {
 		}
 
 		for _, line := range lines {
-			id, _ := xid.FromBytes(line.GetId())
+			id, err := xid.FromBytes(line.GetId())
+			if err != nil {
+				continue
+			}
 			if all {
 				fmt.Printf("%s %s - %s\n", id.Time().Format(viper.GetString("timestampFormat")), line.GetTty(),
 					line.GetFullCommand())
@@ -88,7 +92,7 @@ func doc(cmd *cobra.Command, args []string) {
 	query, qErr := cmd.Flags().GetString("query")
 	script, cErr := cmd.Flags().GetString("script")
 	edit, eErr := cmd.Flags().GetString("edit")
-	hLines, _ := cmd.Flags().GetInt("history")
+	hLines, _ := cmd.Flags().GetInt("history-lines")
 	delete, _ := cmd.Flags().GetString("delete")
 
 	switch {
@@ -231,7 +235,6 @@ func doc(cmd *cobra.Command, args []string) {
 	return
 }
 
-// should run this through "business logic" in coach package
 func ignore(cmd *cobra.Command, args []string) {
 	store, err := database.NewBoltDB(dbpath, false)
 	if err != nil {
@@ -240,17 +243,16 @@ func ignore(cmd *cobra.Command, args []string) {
 	}
 	defer store.Close()
 
-	var fullCmd string
-	if hLines, err := coach.GetRecentHistory(1, false, store); err == nil && len(hLines) > 0 {
-		fullCmd = hLines[0].GetFullCommand()
+	lineCount, err := cmd.Flags().GetInt("history-lines")
+	if err != nil {
+		lineCount = 1
 	}
+	allVariations, _ := cmd.Flags().GetBool("all")
+	remove, _ := cmd.Flags().GetBool("remove")
 
-	remove, rErr := cmd.Flags().GetBool("remove")
-	if rErr == nil && remove {
-		store.UnignoreCommand(fullCmd)
-	} else {
-		store.IgnoreCommand(fullCmd)
-	}
+	err = coach.IgnoreHistory(lineCount, allVariations, remove, store)
+	handleErr(err)
+	return
 }
 
 func run(cmd *cobra.Command, args []string) {

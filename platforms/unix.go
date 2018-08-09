@@ -4,6 +4,7 @@ package platforms
 
 import (
 	"os"
+	"strings"
 )
 
 func Newline(count uint) string {
@@ -39,4 +40,8 @@ const DefaultShell = "bash"
 
 func DefaultHomeDir() string {
 	return "/opt"
+}
+
+func IsCompoundStatement(command string) bool {
+	return strings.ContainsAny(command, ";&|<>")
 }

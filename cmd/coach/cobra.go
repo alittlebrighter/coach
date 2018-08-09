@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"time"
 
 	coach "github.com/alittlebrighter/coach-pro"
 	"github.com/alittlebrighter/coach-pro/storage/database"
@@ -34,9 +35,8 @@ func main() {
 			home+"/config.yaml",
 			home+"/coach.db",
 		),
-		Run: run,
+		Run: appMain,
 	}
-	rootCmd.Flags().BoolP("confirm", "c", false, "Run the command immediately without review.")
 	/*
 		sessionCmd := &cobra.Command{
 			Use:   "session",
@@ -61,7 +61,7 @@ func main() {
 	docCmd.Flags().StringP("query", "q", database.Wildcard, "Query your saved commands by tags.")
 	docCmd.Flags().StringP("script", "s", "", "Quoted command that you would like to document and save.")
 	docCmd.Flags().StringP("edit", "e", "", "Edit the script specified by alias.")
-	docCmd.Flags().IntP("history", "l", 1, "Number of most recent lines in history to put into the script.")
+	docCmd.Flags().IntP("history-lines", "l", 1, "Number of most recent lines in history to put into the script.")
 	docCmd.Flags().String("delete", "", "Delete a saved script.")
 
 	ignoreCmd := &cobra.Command{
@@ -70,6 +70,8 @@ func main() {
 		Run:   ignore,
 	}
 	ignoreCmd.Flags().BoolP("remove", "r", false, "Remove a command from the ignore list.")
+	ignoreCmd.Flags().BoolP("all", "a", false, "Ignore all non-compound commands starting with the first word from the previous line.")
+	ignoreCmd.Flags().IntP("history-lines", "l", 1, "Number of most recent lines in history to ignore.")
 
 	runCmd := &cobra.Command{
 		Use:   "run",
@@ -90,13 +92,25 @@ func main() {
 
 	defer func() {
 		if r := recover(); r != nil {
+			fmt.Println(r)
 			fmt.Printf("ERROR: Something went wrong.  Do you have permissions to access '%s' and its contents?\n", home)
 			os.Exit(1)
 		}
 	}()
-	if err := rootCmd.Execute(); err != nil {
-		handleErr(err)
-		os.Exit(1)
+
+	timer := time.NewTimer(2 * time.Second)
+	runErr := make(chan error)
+	go func() {
+		runErr <- rootCmd.Execute()
+	}()
+	select {
+	case err := <-runErr:
+		if err != nil {
+			handleErr(err)
+			os.Exit(1)
+		}
+	case <-timer.C:
+		// timed out
 	}
 }
 

@@ -19,13 +19,15 @@ import (
 const Wildcard = "?"
 
 var (
-	HistoryBucket   = []byte("history")
-	SavedCmdsBucket = []byte("commands")
-	IgnoreBucket    = []byte("ignore")
-	buckets         = [][]byte{
+	HistoryBucket    = []byte("history")
+	SavedCmdsBucket  = []byte("commands")
+	IgnoreBucket     = []byte("ignore")
+	IgnoreWordBucket = []byte("ignore-word")
+	buckets          = [][]byte{
 		HistoryBucket,
 		SavedCmdsBucket,
 		IgnoreBucket,
+		IgnoreWordBucket,
 	}
 
 	json = jsoniter.ConfigCompatibleWithStandardLibrary
@@ -38,10 +40,14 @@ type BoltDB struct {
 	db *bolt.DB
 }
 
-func NewBoltDB(path string, readonly bool) (db *BoltDB, err error) {
-	b := new(BoltDB)
+func NewBoltDB(path string, readonly bool) (b *BoltDB, err error) {
+	b = new(BoltDB)
 	b.db, err = bolt.Open(path, 0600, &bolt.Options{Timeout: 2 * time.Second, ReadOnly: readonly})
-	return b, b.initDB()
+	if err != nil {
+		return
+	}
+	err = b.initDB()
+	return
 }
 
 // Close closes the bolt db file.
@@ -65,10 +71,6 @@ func (b *BoltDB) initDB() error {
 
 func (b *BoltDB) CheckDupeCmds(command string, count int) (countReached bool) {
 	b.db.View(func(tx *bolt.Tx) error {
-		if shouldIgnore(tx, command) {
-			countReached = false
-			return nil
-		}
 		command = CleanseCommand(command)
 
 		// Assume bucket exists and has keys
@@ -99,7 +101,7 @@ func (b *BoltDB) GetRecent(tty, username string, count int) ([]models.HistoryRec
 		// Assume bucket exists and has keys
 		c := tx.Bucket(HistoryBucket).Cursor()
 
-		for k, v := c.Last(); len(records) < count && k != nil; k, v = c.Prev() {
+		for k, v := c.Last(); len(records) < int(count) && k != nil; k, v = c.Prev() {
 			if tty != Wildcard {
 				if lineTty, err := jsonparser.GetUnsafeString(v, "tty"); err != nil || lineTty != tty {
 					continue
@@ -212,32 +214,81 @@ func (b *BoltDB) DeleteScript(alias []byte) error {
 	})
 }
 
-func (b *BoltDB) IgnoreCommand(command string) (err error) {
+func (b *BoltDB) IgnoreWord(word, username string) (err error) {
+	w, u := []byte(word), []byte(username)
 	err = b.db.Update(func(tx *bolt.Tx) error {
-		return ignoreCommand(tx, command)
+		bucket, err := tx.Bucket(IgnoreWordBucket).CreateBucketIfNotExists(u)
+		if err != nil {
+			return err
+		}
+		return bucket.Put(w, []byte{})
 	})
 	return
 }
 
-func (b *BoltDB) UnignoreCommand(command string) (err error) {
+func (b *BoltDB) UnignoreWord(word, username string) (err error) {
+	w, u := []byte(word), []byte(username)
 	err = b.db.Update(func(tx *bolt.Tx) error {
-		return unignoreCommand(tx, command)
+		bucket := tx.Bucket(IgnoreWordBucket).Bucket(u)
+		if bucket == nil {
+			return nil
+		}
+		return bucket.Delete(w)
 	})
 	return
 }
 
-func ignoreCommand(tx *bolt.Tx, command string) (err error) {
-	err = tx.Bucket(IgnoreBucket).Put([]byte(command), []byte{})
+func (b *BoltDB) IgnoreCommand(command, username string) (err error) {
+	c, u := []byte(command), []byte(username)
+	err = b.db.Update(func(tx *bolt.Tx) error {
+		bucket, err := tx.Bucket(IgnoreBucket).CreateBucketIfNotExists(u)
+		if err != nil {
+			return err
+		}
+		return bucket.Put(c, []byte{})
+	})
 	return
 }
 
-func unignoreCommand(tx *bolt.Tx, command string) (err error) {
-	err = tx.Bucket(IgnoreBucket).Delete([]byte(command))
+func (b *BoltDB) UnignoreCommand(command, username string) (err error) {
+	c, u := []byte(command), []byte(username)
+	err = b.db.Update(func(tx *bolt.Tx) error {
+		bucket := tx.Bucket(IgnoreBucket).Bucket(u)
+		if bucket == nil {
+			return nil
+		}
+		return bucket.Delete(c)
+	})
 	return
 }
 
-func shouldIgnore(tx *bolt.Tx, command string) (yes bool) {
-	yes = tx.Bucket(IgnoreBucket).Get([]byte(command)) != nil
+func (b *BoltDB) ShouldIgnoreCommand(command, username string) (yes bool) {
+	c, u := []byte(command), []byte(username)
+	b.db.View(func(tx *bolt.Tx) error {
+		bucket := tx.Bucket(IgnoreBucket).Bucket(u)
+		if bucket == nil {
+			return nil
+		}
+		if bucket.Get(c) != nil {
+			yes = true
+		}
+		return nil
+	})
+	return
+}
+
+func (b *BoltDB) ShouldIgnoreWord(word, username string) (yes bool) {
+	w, u := []byte(word), []byte(username)
+	b.db.View(func(tx *bolt.Tx) error {
+		bucket := tx.Bucket(IgnoreWordBucket).Bucket(u)
+		if bucket == nil {
+			return nil
+		}
+		if bucket.Get(w) != nil {
+			yes = true
+		}
+		return nil
+	})
 	return
 }
 

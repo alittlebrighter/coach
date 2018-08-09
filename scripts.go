@@ -69,7 +69,7 @@ func SaveScript(toSave models.DocumentedScript, overwrite bool, store ScriptStor
 	}
 
 	// save to ignore list
-	err = store.IgnoreCommand(toSave.GetScript().GetContent())
+	err = IgnoreCommand(toSave.GetScript().GetContent(), store)
 	return
 }
 
@@ -154,7 +154,7 @@ type ScriptStore interface {
 	GetScript(id []byte) *models.DocumentedScript
 	QueryScripts(...string) ([]models.DocumentedScript, error)
 	DeleteScript(id []byte) error
-	IgnoreCommand(string) error
+	IgnoreStore
 }
 
 const doNotEditLine = "!DO NOT EDIT THIS LINE!"
