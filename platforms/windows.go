@@ -54,7 +54,7 @@ func GetPlatformShell(name string) Shell {
 
 type PowerShell struct{}
 
-func (p *PowerShell) BuildCommand(script string) (*exec.Cmd, func(), error) {
+func (p *PowerShell) BuildCommand(script string, args []string) (*exec.Cmd, func(), error) {
 	tmpfile, err := os.OpenFile(os.TempDir()+"/coach"+xid.New().String()+".ps1", os.O_CREATE, 0600)
 	if err != nil {
 		return nil, nil, err
@@ -67,7 +67,8 @@ func (p *PowerShell) BuildCommand(script string) (*exec.Cmd, func(), error) {
 		return nil, nil, err
 	}
 
-	return exec.Command("PowerShell.exe", tmpfile.Name()), cleanup, nil
+	cmdArgs := append([]string{tmpfile.Name()}, args...)
+	return exec.Command("PowerShell.exe", cmdArgs...), cleanup, nil
 }
 
 func (p *PowerShell) LineComment() string {
@@ -80,7 +81,7 @@ func (p *PowerShell) FileExtension() string {
 
 type WindowsCMD struct{}
 
-func (c *WindowsCMD) BuildCommand(script string) (*exec.Cmd, func(), error) {
+func (c *WindowsCMD) BuildCommand(script string, args []string) (*exec.Cmd, func(), error) {
 	tmpfile, err := os.OpenFile(os.TempDir()+"/coach"+xid.New().String()+".bat", os.O_CREATE, 0600)
 	if err != nil {
 		return nil, nil, err
@@ -93,7 +94,7 @@ func (c *WindowsCMD) BuildCommand(script string) (*exec.Cmd, func(), error) {
 		return nil, nil, err
 	}
 
-	return exec.Command(tmpfile.Name()), cleanup, nil
+	return exec.Command(tmpfile.Name(), args...), cleanup, nil
 }
 
 func (c *WindowsCMD) LineComment() string {

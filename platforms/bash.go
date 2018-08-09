@@ -58,8 +58,9 @@ func (b *Bash) GetPWD() string {
 	return path
 }
 
-func (b *Bash) BuildCommand(script string) (*exec.Cmd, func(), error) {
-	return exec.Command("bash", "-c", "( "+script+" )"), nil, nil
+func (b *Bash) BuildCommand(script string, args []string) (*exec.Cmd, func(), error) {
+	cmdArgs := append([]string{"-c", "( " + script + " )" /* HACK */, "''" /* END HACK */}, args...)
+	return exec.Command("bash", cmdArgs...), nil, nil
 }
 
 func (b *Bash) CreateTmpFile(contents []byte) (string, error) {

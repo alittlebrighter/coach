@@ -16,7 +16,7 @@ type Platform interface {
 }
 
 type Shell interface {
-	BuildCommand(script string) (*exec.Cmd, func(), error)
+	BuildCommand(script string, args []string) (*exec.Cmd, func(), error)
 	FileExtension() string
 	LineComment() string
 }
@@ -86,21 +86,21 @@ func WriteTmpFile(script string) (string, func(), error) {
 	return tmpfile.Name(), cleanup, nil
 }
 
-func BuildCommand(interpreter, script string) (*exec.Cmd, func(), error) {
+func BuildCommand(interpreter, script string, args []string) (*exec.Cmd, func(), error) {
 	filename, cleanup, err := WriteTmpFile(script)
 	if err != nil {
 		return nil, nil, err
 	}
-
-	return exec.Command(interpreter, filename), cleanup, nil
+	cmdArgs := append([]string{filename}, args...)
+	return exec.Command(interpreter, cmdArgs...), cleanup, nil
 }
 
 type AnyShell struct {
 	Name string
 }
 
-func (a *AnyShell) BuildCommand(script string) (*exec.Cmd, func(), error) {
-	return BuildCommand(a.Name, script)
+func (a *AnyShell) BuildCommand(script string, args []string) (*exec.Cmd, func(), error) {
+	return BuildCommand(a.Name, script, args)
 }
 
 func (a *AnyShell) LineComment() string {

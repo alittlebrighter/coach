@@ -26,6 +26,10 @@ func RandomID() (id []byte) {
 	return
 }
 
+type Closable interface {
+	Close() error
+}
+
 func HomeDir() string {
 	var home string
 	envSetHome := os.Getenv("COACH_HOME")

@@ -131,10 +131,10 @@ func EditScript(alias string, store ScriptStore) (*models.DocumentedScript, erro
 	return &newScript, nil
 }
 
-func RunScript(script models.DocumentedScript) error {
+func RunScript(script models.DocumentedScript, args []string) error {
 	shell := platforms.GetShell(script.GetScript().GetShell())
 
-	toRun, cleanup, err := shell.BuildCommand(script.GetScript().GetContent())
+	toRun, cleanup, err := shell.BuildCommand(script.GetScript().GetContent(), args)
 	if cleanup != nil {
 		defer cleanup()
 	}
@@ -155,6 +155,7 @@ type ScriptStore interface {
 	QueryScripts(...string) ([]models.DocumentedScript, error)
 	DeleteScript(id []byte) error
 	IgnoreStore
+	//Closable
 }
 
 const doNotEditLine = "!DO NOT EDIT THIS LINE!"

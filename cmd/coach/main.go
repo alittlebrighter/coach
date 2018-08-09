@@ -7,7 +7,6 @@ import (
 	"bufio"
 	"fmt"
 	"os"
-	"os/exec"
 	"strconv"
 	"strings"
 
@@ -267,13 +266,14 @@ func run(cmd *cobra.Command, args []string) {
 	defer store.Close()
 
 	toRun := store.GetScript([]byte(args[0]))
-	if toRun == nil {
-		fmt.Println("No script found by that alias.")
-		return
+
+	scriptArgs := []string{}
+	if len(args) > 1 {
+		scriptArgs = args[1:]
 	}
 
 	if confirmed, cErr := cmd.Flags().GetBool("confirm"); cErr == nil && confirmed {
-		fmt.Println("Running '" + toRun.GetAlias() + "'...")
+		// just run it, don't print anything
 	} else {
 		fmt.Printf("Command '%s' found:\n###\n%s\n###\n$ %s\n\n", toRun.GetAlias(), toRun.GetDocumentation(), Slugify(toRun.GetScript().GetContent(), 48))
 		fmt.Print("Run now? [y/n] ")
@@ -284,23 +284,23 @@ func run(cmd *cobra.Command, args []string) {
 		}
 	}
 
-	if err := coach.RunScript(*toRun); err != nil {
+	if err := coach.RunScript(*toRun, scriptArgs); err != nil {
 		handleErr(err)
 	}
 
 }
 
-type DocStore interface {
-	SaveDoc(*models.DocumentedScript) error
-	QueryDoc(...string) ([]models.DocumentedScript, error)
+/*
+func GetStore(readonly bool) func() *database.BoltDB {
+	var store *database.BoltDB
+	return func() *database.BoltDB {
+		if store == nil {
+			return store
+		}
+		return store
+	}
 }
-
-func GetTTY() string {
-	ttyCmd := exec.Command("tty")
-	ttyCmd.Stdin = os.Stdin
-	ttyBytes, _ := ttyCmd.Output()
-	return strings.TrimSpace(string(ttyBytes))
-}
+*/
 
 func handleErr(e error) {
 	if e != nil {
