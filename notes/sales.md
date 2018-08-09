@@ -16,3 +16,8 @@
 ### Proposed Features
 - alerts when specified commands are run
 - central server
+- identify multi-line repetitions
+- directory map (alias important directorys)
+- ignore all variations of commands if not compound (cd, cat, ls, etc.)
+- script agnostic way of getting runtime variables
+- pre and post append/run scripts
