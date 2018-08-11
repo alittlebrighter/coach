@@ -44,6 +44,15 @@ type BoltDB struct {
 	db *bolt.DB
 }
 
+<<<<<<< 010d327b134f761d8c5568db990707b42fbe7ff6
+=======
+<<<<<<< HEAD
+func NewBoltDB(path string, readonly bool) (db *BoltDB, err error) {
+	b := new(BoltDB)
+	b.db, err = bolt.Open(path, 0600, &bolt.Options{Timeout: 2 * time.Second, ReadOnly: readonly})
+	return b, b.initDB()
+=======
+>>>>>>> fix file permissions for group access
 func NewBoltDB(path string, readonly bool) (b *BoltDB, err error) {
 	b = new(BoltDB)
 	b.db, err = bolt.Open(path, FilePerms, &bolt.Options{Timeout: 2 * time.Second, ReadOnly: readonly})
@@ -52,6 +61,10 @@ func NewBoltDB(path string, readonly bool) (b *BoltDB, err error) {
 	}
 	err = b.initDB()
 	return
+<<<<<<< 010d327b134f761d8c5568db990707b42fbe7ff6
+=======
+>>>>>>> 6cd5a0e... fix file permissions for group access
+>>>>>>> fix file permissions for group access
 }
 
 // Close closes the bolt db file.
