@@ -80,7 +80,7 @@ func EditScript(alias string, store ScriptStore) (*models.DocumentedScript, erro
 		script = &models.DocumentedScript{
 			Id:     []byte(alias),
 			Alias:  alias,
-			Tags:   []string{alias},
+			Tags:   strings.Split(alias, "."),
 			Script: &models.Script{Shell: platforms.IdentifyShell()},
 		}
 	}
