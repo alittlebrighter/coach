@@ -16,7 +16,10 @@ import (
 	"github.com/alittlebrighter/coach/gen/models"
 )
 
-const Wildcard = "?"
+const (
+	Wildcard  = "?"
+	FilePerms = 0660
+)
 
 var (
 	HistoryBucket   = []byte("history")
@@ -38,10 +41,21 @@ type BoltDB struct {
 	db *bolt.DB
 }
 
+<<<<<<< HEAD
 func NewBoltDB(path string, readonly bool) (db *BoltDB, err error) {
 	b := new(BoltDB)
 	b.db, err = bolt.Open(path, 0600, &bolt.Options{Timeout: 2 * time.Second, ReadOnly: readonly})
 	return b, b.initDB()
+=======
+func NewBoltDB(path string, readonly bool) (b *BoltDB, err error) {
+	b = new(BoltDB)
+	b.db, err = bolt.Open(path, FilePerms, &bolt.Options{Timeout: 2 * time.Second, ReadOnly: readonly})
+	if err != nil {
+		return
+	}
+	err = b.initDB()
+	return
+>>>>>>> 6cd5a0e... fix file permissions for group access
 }
 
 // Close closes the bolt db file.

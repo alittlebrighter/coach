@@ -122,6 +122,6 @@ func initConfig() {
 	if err := viper.ReadInConfig(); err != nil {
 		defaults := viper.AllSettings()
 		data, _ := yaml.Marshal(&defaults)
-		ioutil.WriteFile(home+"/config.yaml", data, 0600)
+		ioutil.WriteFile(home+"/config.yaml", data, database.FilePerms)
 	}
 }
