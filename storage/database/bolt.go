@@ -16,7 +16,10 @@ import (
 	"github.com/alittlebrighter/coach-pro/gen/models"
 )
 
-const Wildcard = "?"
+const (
+	Wildcard  = "?"
+	FilePerms = 0660
+)
 
 var (
 	HistoryBucket    = []byte("history")
@@ -42,7 +45,7 @@ type BoltDB struct {
 
 func NewBoltDB(path string, readonly bool) (b *BoltDB, err error) {
 	b = new(BoltDB)
-	b.db, err = bolt.Open(path, 0600, &bolt.Options{Timeout: 2 * time.Second, ReadOnly: readonly})
+	b.db, err = bolt.Open(path, FilePerms, &bolt.Options{Timeout: 2 * time.Second, ReadOnly: readonly})
 	if err != nil {
 		return
 	}
