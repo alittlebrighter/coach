@@ -13,7 +13,7 @@ import (
 const DefaultShell = "windowsCMD"
 
 func DefaultHomeDir() string {
-	return strings.Replace(os.Getenv("ProgramFiles"), "\\", "/")
+	return strings.Replace(os.Getenv("ProgramFiles"), "\\", "/", -1)
 }
 
 func Newline(count uint) string {
