@@ -97,7 +97,6 @@ func ParseFile(path, base string, size int64) (*models.DocumentedScript, error) 
 		case strings.HasPrefix(trimmed, shell.LineComment()):
 			docLine := strings.TrimLeft(line, " \t"+shell.LineComment()) + platforms.Newline(1)
 			if len(strings.TrimSpace(docLine)) > 0 {
-				fmt.Println(len(strings.TrimSpace(docLine)), docLine)
 				script.Documentation += docLine
 			}
 			fallthrough
