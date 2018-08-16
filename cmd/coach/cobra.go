@@ -52,7 +52,7 @@ func main() {
 	historyCmd.Flags().BoolP("all", "a", false, "Retrieve history from all sessions.")
 
 	docCmd := &cobra.Command{
-		Use:     "doc",
+		Use:     "lib",
 		Short:   "Save and query commands with tags and documentation.  Default is to document the most recent command.",
 		Example: "coach doc [alias] [tags] [comment] # empty alias represented by \"\", tag list must be quoted if it contains spaces",
 		Run:     doc,
@@ -62,6 +62,8 @@ func main() {
 	docCmd.Flags().StringP("edit", "e", "", "Edit the script specified by alias.")
 	docCmd.Flags().IntP("history-lines", "l", 1, "Number of most recent lines in history to put into the script.")
 	docCmd.Flags().String("delete", "", "Delete a saved script.")
+	docCmd.Flags().String("restore", "", "Restore a deleted script.")
+	docCmd.Flags().Bool("empty-trash", false, "Completely erase all deleted scripts.")
 
 	ignoreCmd := &cobra.Command{
 		Use:   "ignore",

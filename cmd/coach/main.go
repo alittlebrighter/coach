@@ -9,6 +9,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/rs/xid"
 
@@ -86,6 +87,8 @@ func doc(cmd *cobra.Command, args []string) {
 	edit, eErr := cmd.Flags().GetString("edit")
 	hLines, _ := cmd.Flags().GetInt("history-lines")
 	delete, _ := cmd.Flags().GetString("delete")
+	restore, _ := cmd.Flags().GetString("restore")
+	emptyTrash, _ := cmd.Flags().GetBool("empty-trash")
 
 	switch {
 	case len(args) >= 3:
@@ -162,30 +165,91 @@ func doc(cmd *cobra.Command, args []string) {
 			handleErr(err)
 			return
 		}
+	case len(restore) > 0:
+		store := coach.GetStore(false)
+		var restored *models.DocumentedScript
+		var err error
+		overwrite := false
+
+		for restored, err = coach.RestoreScript(restore, store); err == database.ErrAlreadyExists; err = coach.SaveScript(*restored, overwrite, store) {
+			store.Close()
+			if restored == nil {
+				break
+			}
+			fmt.Printf("The alias '%s' already exists.\n", restored.GetAlias())
+			fmt.Printf("Enter '%s' again to overwrite, or try something else: ", restored.GetAlias())
+			in, inErr := bufio.NewReader(os.Stdin).ReadString('\n')
+			if inErr != nil || len(strings.TrimSpace(in)) == 0 {
+				overwrite = false
+				continue
+			}
+			input := strings.Fields(in)[0]
+
+			if input == restored.GetAlias() {
+				overwrite = true
+				store = coach.GetStore(false)
+				continue
+			} else {
+				restored.Alias = input
+				overwrite = false
+			}
+			store = coach.GetStore(false)
+		}
+
+		if err != nil {
+			coach.GetStore(false)
+			restored.Alias = restored.GetAlias() + xid.New().String()
+			coach.SaveScript(*restored, true, store)
+		}
+		store.Close()
+
+		handleErr(err)
 	case len(delete) > 0:
+		store := coach.GetStore(false)
+		err := coach.DeleteScript(delete, store)
+		handleErr(err)
+		store.Close()
+	case emptyTrash:
 		store := coach.GetStore(true)
-		if store.GetScript([]byte(strings.TrimSpace(delete))) == nil {
-			handleErr(database.ErrNotFound)
+		trashed, err := coach.QueryScripts(database.TrashTag, store)
+		if err != nil {
+			handleErr(err)
 			store.Close()
 			return
 		}
 		store.Close()
 
-		fmt.Printf("Type '%s' again to delete: ", delete)
-		in, err := bufio.NewReader(os.Stdin).ReadString('\n')
-		input := strings.Fields(in)
-		if err != nil || len(input) == 0 {
-			fmt.Println("Not deleting.")
+		if len(trashed) == 0 {
+			fmt.Println("Trash is empty.")
 			return
 		}
 
-		fmt.Printf("Deleting '%s' now.\n", input[0])
-		store = coach.GetStore(false)
-		defer store.Close()
-		if err := store.DeleteScript([]byte(input[0])); err != nil {
-			handleErr(err)
+		fmt.Printf("Trash contents: %d script(s) found\n", len(trashed))
+		for _, script := range trashed {
+			fmt.Println("\t" + strings.TrimPrefix(script.GetAlias(), database.TrashTag+"."))
+		}
+
+		empty := "empty-trash"
+		fmt.Printf("\nType '%s' to completely erase these scripts: ", empty)
+		in, err := bufio.NewReader(os.Stdin).ReadString('\n')
+		input := strings.Fields(in)
+		if err != nil || len(input) == 0 || input[0] != empty {
+			fmt.Println("Not emptying trash.")
 			return
 		}
+
+		fmt.Println("Emptying trash now.")
+		store = coach.GetStore(false)
+		defer store.Close()
+		wg := sync.WaitGroup{}
+		wg.Add(len(trashed))
+		for _, script := range trashed {
+			go func() {
+				store.DeleteScript(script.GetId())
+				wg.Done()
+			}()
+		}
+		wg.Wait()
 	case qErr == nil && len(query) > 0:
 		store := coach.GetStore(true)
 		defer store.Close()

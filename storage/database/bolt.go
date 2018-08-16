@@ -18,6 +18,7 @@ import (
 
 const (
 	Wildcard  = "?"
+	TrashTag  = "coach.trash.983476" // just something arbitrary that is unlikely to be used by anything else
 	FilePerms = 0660
 )
 
@@ -161,12 +162,11 @@ func (b *BoltDB) QueryScripts(tags ...string) ([]models.DocumentedScript, error)
 	}
 
 	err := b.db.View(func(tx *bolt.Tx) error {
-		// Assume bucket exists and has keys
 		c := tx.Bucket(SavedCmdsBucket).Cursor()
 
 		for k, v := c.First(); k != nil; k, v = c.Next() {
 			var savedCmd models.DocumentedScript
-			if all {
+			if all && len(k) > 0 {
 				err := json.Unmarshal(v, &savedCmd)
 				if err == nil {
 					cmds = append(cmds, savedCmd)
@@ -188,10 +188,10 @@ func (b *BoltDB) QueryScripts(tags ...string) ([]models.DocumentedScript, error)
 							skip = true
 							break
 						}
+						cmds = append(cmds, savedCmd)
 					}
 				}
 			}, "tags")
-			cmds = append(cmds, savedCmd)
 		}
 
 		return nil
@@ -212,7 +212,7 @@ func (b *BoltDB) GetScript(alias []byte) (command *models.DocumentedScript) {
 }
 
 func (b *BoltDB) DeleteScript(alias []byte) error {
-	return b.db.Update(func(tx *bolt.Tx) error {
+	return b.db.Batch(func(tx *bolt.Tx) error {
 		return tx.Bucket(SavedCmdsBucket).Delete(alias)
 	})
 }

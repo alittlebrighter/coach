@@ -17,6 +17,7 @@ import (
 
 	"github.com/alittlebrighter/coach-pro/gen/models"
 	"github.com/alittlebrighter/coach-pro/platforms"
+	"github.com/alittlebrighter/coach-pro/storage/database"
 )
 
 const Header = "exported from COACH - https://github.com/alittlebrighter/coach"
@@ -148,6 +149,34 @@ func RunScript(script models.DocumentedScript, args []string) error {
 	toRun.Run()
 
 	return nil
+}
+
+func DeleteScript(alias string, store ScriptStore) error {
+	trash := store.GetScript([]byte(alias))
+	if trash == nil {
+		return database.ErrNotFound
+	}
+	trash.Alias = database.TrashTag + "." + trash.GetAlias()
+	trash.Documentation = "-TAGS- = " + strings.Join(trash.GetTags(), ",") + platforms.Newline(1) +
+		trash.GetDocumentation()
+	trash.Tags = []string{database.TrashTag}
+
+	store.DeleteScript(trash.GetId())
+	return SaveScript(*trash, true, store)
+}
+
+func RestoreScript(alias string, store ScriptStore) (*models.DocumentedScript, error) {
+	restore := store.GetScript([]byte(database.TrashTag + "." + alias))
+	if restore == nil {
+		return nil, database.ErrNotFound
+	}
+	store.DeleteScript(restore.GetId())
+	restore.Alias = strings.TrimPrefix(restore.GetAlias(), database.TrashTag+".")
+	firstNewline := strings.Index(restore.GetDocumentation(), platforms.Newline(1))
+	UnmarshalLine(restore.GetDocumentation()[:firstNewline], restore) // restore Tags
+	restore.Documentation = restore.GetDocumentation()[firstNewline:]
+
+	return restore, SaveScript(*restore, false, store)
 }
 
 type ScriptStore interface {
