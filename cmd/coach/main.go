@@ -42,7 +42,7 @@ func history(cmd *cobra.Command, args []string) {
 		dupeCount := viper.GetInt("history.reps-pre-doc-prompt")
 
 		if enoughDupes, _ := coach.SaveHistory(record, dupeCount, store); enoughDupes {
-			fmt.Printf("\n---\nThis command has been used %d+ times.\n`coach doc [alias] "+
+			fmt.Printf("\n---\nThis command has been used %d+ times.\n`coach lib [alias] "+
 				"[tags] [comment...]` to save and document this command.\n`coach ignore` to silence "+
 				"this output for this command.\n",
 				dupeCount)
@@ -104,7 +104,7 @@ func doc(cmd *cobra.Command, args []string) {
 
 		shell := platforms.IdentifyShell()
 		if len(shell) == 0 {
-			fmt.Println("You're shell could not be identified.  Using 'bash' for now.\nRun `coach doc -e " + args[0] + "` to edit.")
+			fmt.Println("You're shell could not be identified.  Using 'bash' for now.\nRun `coach lib -e " + args[0] + "` to edit.")
 			shell = "bash"
 		}
 		err := coach.SaveScript(models.DocumentedScript{
