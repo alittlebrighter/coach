@@ -104,7 +104,7 @@ func doc(cmd *cobra.Command, args []string) {
 
 		shell := platforms.IdentifyShell()
 		if len(shell) == 0 {
-			fmt.Println("You're shell could not be identified.  Using 'bash' for now.\nRun `coach lib -e " + args[0] + "` to edit.")
+			fmt.Println("Your shell could not be identified.  Using 'bash' for now.\nRun `coach lib -e " + args[0] + "` to edit.")
 			shell = "bash"
 		}
 		err := coach.SaveScript(models.DocumentedScript{
