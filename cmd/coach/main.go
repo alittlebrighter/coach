@@ -240,7 +240,6 @@ func doc(cmd *cobra.Command, args []string) {
 
 		fmt.Println("Emptying trash now.")
 		store = coach.GetStore(false)
-		defer store.Close()
 		wg := sync.WaitGroup{}
 		wg.Add(len(trashed))
 		for _, script := range trashed {
@@ -250,6 +249,7 @@ func doc(cmd *cobra.Command, args []string) {
 			}()
 		}
 		wg.Wait()
+		store.Close()
 	case qErr == nil && len(query) > 0:
 		store := coach.GetStore(true)
 		defer store.Close()
@@ -301,6 +301,10 @@ func run(cmd *cobra.Command, args []string) {
 	store := coach.GetStore(true)
 	toRun := store.GetScript([]byte(args[0]))
 	store.Close()
+	if toRun == nil {
+		handleErr(database.ErrNotFound)
+		return
+	}
 
 	scriptArgs := []string{}
 	if len(args) > 1 {
