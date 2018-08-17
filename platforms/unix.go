@@ -39,7 +39,7 @@ func GetPlatformShell(name string) Shell {
 const DefaultShell = "bash"
 
 func DefaultHomeDir() string {
-	return "/opt"
+	return "/usr/local"
 }
 
 func IsCompoundStatement(command string) bool {
