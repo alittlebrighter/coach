@@ -35,7 +35,7 @@ func main() {
 	rootCmd := &cobra.Command{
 		Use:   "coach",
 		Short: "A tool to help you save and document common commands executed on the command line.",
-		Long: fmt.Sprintf("Coach %s: %s\n%s\nConfiguration: %s\nScript DB: %s",
+		Long: fmt.Sprintf("Coach %s: %s\n%s\nConfiguration: %s\nScript DB: %s\n\nFor support contact support.coach@mg.alittlebrighter.io",
 			version,
 			"Save, document, query, and run all of your scripts.",
 			expireNotice,

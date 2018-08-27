@@ -12,7 +12,7 @@ var (
 	expiration        time.Time
 
 	trialEnded = errors.New("The trial period has ended.\n" +
-		"You can purchase coach at https://coach.alittlebrighter.io#download")
+		"You can purchase coach at https://coach.alittlebrighter.io#downloads")
 	expireNotice = ""
 )
 

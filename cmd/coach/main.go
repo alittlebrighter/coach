@@ -171,6 +171,7 @@ func doc(cmd *cobra.Command, args []string) {
 		var err error
 		overwrite := false
 
+		stdinReader := bufio.NewReader(os.Stdin)
 		for restored, err = coach.RestoreScript(restore, store); err == database.ErrAlreadyExists; err = coach.SaveScript(*restored, overwrite, store) {
 			store.Close()
 			if restored == nil {
@@ -178,7 +179,7 @@ func doc(cmd *cobra.Command, args []string) {
 			}
 			fmt.Printf("The alias '%s' already exists.\n", restored.GetAlias())
 			fmt.Printf("Enter '%s' again to overwrite, or try something else: ", restored.GetAlias())
-			in, inErr := bufio.NewReader(os.Stdin).ReadString('\n')
+			in, inErr := stdinReader.ReadString('\n')
 			if inErr != nil || len(strings.TrimSpace(in)) == 0 {
 				overwrite = false
 				continue
