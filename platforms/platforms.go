@@ -1,19 +1,12 @@
 package platforms
 
 import (
+	"errors"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"strings"
 )
-
-type Platform interface {
-	History(lineCount int) (lines []string, err error)
-	GetTTY() string
-	GetPWD() string
-	CreateTmpFile(contents []byte) (string, error)
-	OpenEditor(filepath string) error
-}
 
 type Shell interface {
 	BuildCommand(script string, args []string) (*exec.Cmd, func(), error)
@@ -48,6 +41,23 @@ func GetShell(name string) Shell {
 		return &Node{AnyShell: &AnyShell{Name: name}}
 	default:
 		return &AnyShell{Name: name}
+	}
+}
+
+func OpenEditor(filename string) error {
+	cmd := exec.Command(GetEditorCmd(), filename)
+	cmd.Stdin, cmd.Stdout, cmd.Stderr = os.Stdin, os.Stdout, os.Stderr
+	return cmd.Run()
+}
+
+func NativeHistory(lineCount int) (<-chan string, error) {
+	shell := GetShell("")
+
+	switch shell.(type) {
+	case *Bash:
+		return new(Bash).History(lineCount), nil
+	default:
+		return nil, errors.New("not implemented")
 	}
 }
 

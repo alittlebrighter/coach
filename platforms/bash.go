@@ -5,13 +5,10 @@ package platforms
 
 import (
 	"bytes"
-	"io/ioutil"
-	"os"
+	"fmt"
 	"os/exec"
 	"strconv"
 	"strings"
-
-	"github.com/rs/xid"
 )
 
 func CleanupCommand(cmd string) (clean string) {
@@ -33,45 +30,44 @@ func CleanupCommand(cmd string) (clean string) {
 
 type Bash struct{}
 
-func (b *Bash) History(lineCount int) (lines []string, err error) {
-	output := bytes.NewBuffer([]byte{})
-	historyCmd := exec.Command("history", strconv.Itoa(lineCount))
-	historyCmd.Stdin = os.Stdin
-	historyCmd.Stdout = output
-	historyCmd.Run()
+func (b *Bash) History(lineCount int) <-chan string {
+	historyCmd := exec.Command("bash", "-i")
+	historyCmd.Stdin = bytes.NewBuffer([]byte(fmt.Sprintf("history %d; exit;", lineCount)))
+	output, _ := historyCmd.StdoutPipe()
+	historyCmd.Start()
+	lines := make(chan string)
 
-	for line, err := output.ReadString('\n'); err == nil; line, err = output.ReadString('\n') {
-		lines = append(lines, CleanupCommand(line))
-	}
-	return
-}
+	go func() {
+		line := make([]byte, 128)
+		command := ""
+		for _, err := output.Read(line); err == nil; _, err = output.Read(line) {
+			command += string(line)
 
-func (b *Bash) GetTTY() string {
-	ttyCmd := exec.Command("tty")
-	ttyCmd.Stdin = os.Stdin
-	ttyBytes, _ := ttyCmd.Output()
-	return strings.TrimSpace(string(ttyBytes))
-}
+			for {
+				newlineIndex := strings.Index(command, "\n")
+				if newlineIndex == -1 {
+					break
+				}
 
-func (b *Bash) GetPWD() string {
-	path, _ := os.Getwd()
-	return path
+				lines <- CleanupCommand(command[:newlineIndex])
+
+				if newlineIndex == len(command)-1 {
+					command = ""
+				} else {
+					command = command[newlineIndex+1:]
+				}
+			}
+		}
+		close(lines)
+		historyCmd.Wait()
+	}()
+
+	return lines
 }
 
 func (b *Bash) BuildCommand(script string, args []string) (*exec.Cmd, func(), error) {
 	cmdArgs := append([]string{"-c", "( " + script + " )" /* HACK */, "''" /* END HACK */}, args...)
 	return exec.Command("bash", cmdArgs...), nil, nil
-}
-
-func (b *Bash) CreateTmpFile(contents []byte) (string, error) {
-	filename := "/tmp/coach-" + xid.New().String() + ".sh"
-	return filename, ioutil.WriteFile(filename, contents, 0600)
-}
-
-func (b *Bash) OpenEditor(filename string) error {
-	cmd := exec.Command(GetEditorCmd(), filename)
-	cmd.Stdin, cmd.Stdout, cmd.Stderr = os.Stdin, os.Stdout, os.Stderr
-	return cmd.Run()
 }
 
 func (b *Bash) FileExtension() string {

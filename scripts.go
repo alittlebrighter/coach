@@ -117,7 +117,7 @@ func EditScript(alias string, store ScriptStore) (*models.DocumentedScript, erro
 		return nil, err
 	}
 
-	if err := Shell.OpenEditor(tmpfile.Name()); err != nil {
+	if err := platforms.OpenEditor(tmpfile.Name()); err != nil {
 		return nil, err
 	}
 	newContents, err := ioutil.ReadFile(tmpfile.Name())

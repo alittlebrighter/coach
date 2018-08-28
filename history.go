@@ -5,6 +5,7 @@ package coach
 
 import (
 	"errors"
+	"fmt"
 	"os/user"
 	"strings"
 
@@ -16,11 +17,53 @@ import (
 	"github.com/alittlebrighter/coach-pro/storage/database"
 )
 
+func ImportHistory(store HistoryStore) error {
+	user, err := user.Current()
+	if err != nil {
+		return err
+	}
+	now := ptypes.TimestampNow()
+	tty := platforms.GetTTY()
+	hLine := models.HistoryRecord{
+		Timestamp: now,
+		Tty:       tty,
+		User:      user.Username,
+	}
+
+	lines, err := platforms.NativeHistory(viper.GetInt("history.maxlines"))
+	if err != nil {
+		return err
+	}
+
+	toSave := make(chan database.HasID)
+	go func() {
+		for err := range store.SaveBatch(toSave, database.HistoryBucket) {
+			fmt.Println("ERROR:", err)
+		}
+	}()
+	for line := range lines {
+		if len(line) == 0 || strings.HasPrefix(line, "coach") ||
+			strings.HasPrefix(line, "history") || strings.HasPrefix(line, "exit") {
+			continue
+		}
+
+		hLine.Id = RandomID()
+		hLine.FullCommand = line
+
+		toSave <- &hLine
+	}
+	close(toSave)
+
+	return nil
+}
+
 func SaveHistory(line string, dupeCount int, store HistoryStore) (promptDoc bool, err error) {
 	cmd := platforms.CleanupCommand(line)
 	if len(cmd) == 0 {
-		if lines, err := Shell.History(1); err == nil && len(lines) > 0 {
-			cmd = lines[0]
+		if lines, err := platforms.NativeHistory(1); err == nil && len(lines) > 0 {
+			for line := range lines {
+				cmd = line
+			}
 		}
 	}
 
@@ -33,7 +76,7 @@ func SaveHistory(line string, dupeCount int, store HistoryStore) (promptDoc bool
 		Id:          RandomID(),
 		Timestamp:   ptypes.TimestampNow(),
 		FullCommand: cmd,
-		Tty:         Shell.GetTTY(),
+		Tty:         platforms.GetTTY(),
 		User:        user.Username,
 	}
 	if len(hLine.GetFullCommand()) == 0 || strings.HasPrefix(hLine.GetFullCommand(), "coach") {
@@ -94,7 +137,7 @@ func GetRecentHistory(n int, allSessions bool, store HistoryGetter) (lines []mod
 	if allSessions {
 		tty = database.Wildcard
 	} else {
-		tty = Shell.GetTTY()
+		tty = platforms.GetTTY()
 	}
 
 	lines, err = store.GetRecent(tty, currentUser.Username, n)
@@ -103,6 +146,7 @@ func GetRecentHistory(n int, allSessions bool, store HistoryGetter) (lines []mod
 
 type HistoryStore interface {
 	Save(id []byte, value interface{}, overwrite bool) error
+	SaveBatch(<-chan database.HasID, []byte) <-chan error
 	CheckDupeCmds(string, int) bool
 	PruneHistory(max int) error
 	HistoryGetter

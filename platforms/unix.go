@@ -4,8 +4,16 @@ package platforms
 
 import (
 	"os"
+	"os/exec"
 	"strings"
 )
+
+func GetTTY() string {
+	ttyCmd := exec.Command("tty")
+	ttyCmd.Stdin = os.Stdin
+	ttyBytes, _ := ttyCmd.Output()
+	return strings.TrimSpace(string(ttyBytes))
+}
 
 func Newline(count uint) string {
 	if count <= 1 {

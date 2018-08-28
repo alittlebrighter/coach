@@ -309,12 +309,27 @@ func (b *BoltDB) Save(id []byte, instance interface{}, overwrite bool) (err erro
 	if id == nil || len(id) == 0 {
 		id = xid.New().Bytes()
 	}
-	return b.db.Update(func(tx *bolt.Tx) error {
+	return b.db.Batch(func(tx *bolt.Tx) error {
 		if !overwrite && tx.Bucket(bucket).Get(id) != nil {
 			return ErrAlreadyExists
 		}
 		return saveToBucket(tx, bucket, id, instance)
 	})
+}
+
+func (b *BoltDB) SaveBatch(toSave <-chan HasID, bucket []byte) <-chan error {
+	errs := make(chan error)
+
+	go func() {
+		b.db.Batch(func(tx *bolt.Tx) error {
+			for instance := range toSave {
+				saveToBucket(tx, bucket, instance.GetId(), instance)
+			}
+			return nil
+		})
+	}()
+
+	return errs
 }
 
 func saveToBucket(tx *bolt.Tx, bucket []byte, id []byte, val interface{}) error {
@@ -323,4 +338,8 @@ func saveToBucket(tx *bolt.Tx, bucket []byte, id []byte, val interface{}) error 
 		return err
 	}
 	return tx.Bucket(bucket).Put(id, data)
+}
+
+type HasID interface {
+	GetId() []byte
 }

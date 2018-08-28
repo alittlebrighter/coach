@@ -16,6 +16,10 @@ func DefaultHomeDir() string {
 	return strings.Replace(os.Getenv("ProgramFiles"), "\\", "/", -1)
 }
 
+func GetTTY() string {
+	return "windows"
+}
+
 func Newline(count uint) string {
 	if count <= 1 {
 		return "\r\n"

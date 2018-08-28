@@ -33,13 +33,13 @@ func session(cmd *cobra.Command, args []string) {
 func history(cmd *cobra.Command, args []string) {
 	record, rErr := cmd.Flags().GetString("record")
 	all, _ := cmd.Flags().GetBool("all")
+	hImport, _ := cmd.Flags().GetBool("import")
 
 	switch {
 	case rErr == nil && len(record) > 0:
-		store := coach.GetStore(false)
-		defer store.Close()
-
 		dupeCount := viper.GetInt("history.reps-pre-doc-prompt")
+
+		store := coach.GetStore(false)
 
 		if enoughDupes, _ := coach.SaveHistory(record, dupeCount, store); enoughDupes {
 			fmt.Printf("\n---\nThis command has been used %d+ times.\n`coach lib [alias] "+
@@ -47,6 +47,26 @@ func history(cmd *cobra.Command, args []string) {
 				"this output for this command.\n",
 				dupeCount)
 		}
+		store.Close()
+	case hImport:
+		store := coach.GetStore(false)
+		defer store.Close()
+
+		lines, err := coach.GetRecentHistory(1, true, store)
+		if err != nil {
+			handleErr(err)
+		}
+
+		if len(lines) > 0 {
+			fmt.Print("You already have saved history, are you sure you want to import? (y/n): ")
+			response, err := bufio.NewReader(os.Stdin).ReadString('\n')
+			if err != nil || len(response) == 0 || !strings.HasPrefix(strings.ToLower(response), "y") {
+				handleErr(err)
+				return
+			}
+		}
+
+		handleErr(coach.ImportHistory(store))
 	default:
 		store := coach.GetStore(true)
 		defer store.Close()
@@ -71,7 +91,7 @@ func history(cmd *cobra.Command, args []string) {
 				continue
 			}
 			if all {
-				fmt.Printf("%s %s - %s\n", id.Time().Format(viper.GetString("timestampFormat")), line.GetTty(),
+				fmt.Printf("%s %s@%s - %s\n", id.Time().Format(viper.GetString("timestampFormat")), line.User, line.GetTty(),
 					line.GetFullCommand())
 			} else {
 				fmt.Printf("%s - %s\n", id.Time().Format(viper.GetString("timestampFormat")),
@@ -142,10 +162,11 @@ func doc(cmd *cobra.Command, args []string) {
 			return err
 		}
 
+		stdin := bufio.NewReader(os.Stdin)
 		for err = save(overwrite); err == database.ErrAlreadyExists; err = save(overwrite) {
 			fmt.Printf("The alias '%s' already exists.\n", newScript.GetAlias())
 			fmt.Printf("Enter '%s' again to overwrite, or try something else: ", newScript.GetAlias())
-			in, inErr := bufio.NewReader(os.Stdin).ReadString('\n')
+			in, inErr := stdin.ReadString('\n')
 			if inErr != nil || len(strings.TrimSpace(in)) == 0 {
 				overwrite = false
 				continue
@@ -330,8 +351,16 @@ func run(cmd *cobra.Command, args []string) {
 }
 
 func handleErr(e error) {
+	handleErrExit(e, false)
+}
+
+func handleErrExit(e error, shouldExit bool) {
 	if e != nil {
 		fmt.Println("ERROR:", e)
+
+		if shouldExit {
+			os.Exit(1)
+		}
 	}
 }
 

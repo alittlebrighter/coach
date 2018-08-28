@@ -16,13 +16,8 @@ import (
 )
 
 var (
-	Shell  platforms.Platform
 	DBPath string
 )
-
-func init() {
-	Shell = &platforms.Bash{}
-}
 
 func RandomID() (id []byte) {
 	id = xid.New().Bytes()

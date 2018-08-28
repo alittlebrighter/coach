@@ -58,6 +58,7 @@ func main() {
 	}
 	historyCmd.Flags().StringP("record", "r", "", "Record command.  With `bash` you can use \"$(history 1)\"")
 	historyCmd.Flags().BoolP("all", "a", false, "Retrieve history from all sessions.")
+	historyCmd.Flags().Bool("import", false, "Import command history.  Supports bash and PowerShell.")
 
 	docCmd := &cobra.Command{
 		Use:     "lib",
