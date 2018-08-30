@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/alittlebrighter/coach-pro/gen/models"
+	models "github.com/alittlebrighter/coach-pro/gen/proto"
 	"github.com/alittlebrighter/coach-pro/platforms"
 )
 

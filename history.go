@@ -12,7 +12,7 @@ import (
 	"github.com/golang/protobuf/ptypes"
 	"github.com/spf13/viper"
 
-	"github.com/alittlebrighter/coach-pro/gen/models"
+	models "github.com/alittlebrighter/coach-pro/gen/proto"
 	"github.com/alittlebrighter/coach-pro/platforms"
 	"github.com/alittlebrighter/coach-pro/storage/database"
 )

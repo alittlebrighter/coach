@@ -10,10 +10,10 @@ import (
 
 	"github.com/buger/jsonparser"
 	bolt "github.com/coreos/bbolt"
-	"github.com/json-iterator/go" // for full (de)serialization
+	"github.com/json-iterator/go"
 	"github.com/rs/xid"
 
-	"github.com/alittlebrighter/coach-pro/gen/models"
+	models "github.com/alittlebrighter/coach-pro/gen/proto"
 )
 
 const (

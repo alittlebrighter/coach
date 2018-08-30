@@ -1,0 +1,46 @@
+syntax="proto3";
+
+package coach;
+
+option go_package = "proto";
+
+import "coach.proto";
+
+service Sample {
+    rpc Scripts(ScriptsQuery) returns (GetScriptsResponse);
+    rpc RunScript(stream RunEventIn) returns (stream RunEventOut);
+
+    // this gets interesting in the implementation
+    // rpc LifoEcho(stream Val) returns (stream Val);
+}
+
+message ScriptsQuery {
+    string tagQuery = 1;
+}
+
+message GetScriptsResponse {
+    repeated DocumentedScript scripts = 1;
+}
+
+// RunEventIn has multiple uses, the first event should contain the tag of the script
+// to run in the input.  Subsequent events can contain responses to requests for input
+// 
+message RunEventIn {
+    string input = 1;
+    repeated EnvVar env = 2;
+
+    // specify the batch size in bytes you would like the response output to come in
+    uint32 responseSize = 3;
+}
+
+message RunEventOut {
+    string output = 1;
+
+    // exitCode means nothing until stream finishes
+    int32 exitCode = 2;
+}
+
+message EnvVar {
+    string name = 1;
+    string value = 2;
+}

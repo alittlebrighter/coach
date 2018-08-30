@@ -1,7 +1,8 @@
 // Copyright (c) 2018, Adam Bright <brightam1@gmail.com>
 // See LICENSE for licensing information
 
-//go:generate protoc -I protobuf/ --go_out=plugins=grpc:gen/models protobuf/coach.proto
+//go:generate protoc -I protobuf/ --go_out=plugins=grpc:gen/proto protobuf/coach.proto protobuf/service.proto
+
 package coach
 
 import (
