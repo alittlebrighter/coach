@@ -7,6 +7,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"os/exec"
 	"strconv"
 	"strings"
 	"sync"
@@ -333,9 +334,7 @@ func run(cmd *cobra.Command, args []string) {
 		scriptArgs = args[1:]
 	}
 
-	if confirmed, cErr := cmd.Flags().GetBool("confirm"); cErr == nil && confirmed {
-		// just run it, don't print anything
-	} else {
+	if confirmed, cErr := cmd.Flags().GetBool("confirm"); cErr != nil || !confirmed {
 		fmt.Printf("Command '%s' found:\n###\n%s\n###\n$ %s\n\n", toRun.GetAlias(), toRun.GetDocumentation(), Slugify(toRun.GetScript().GetContent(), 48))
 		fmt.Print("Run now? [y/n] ")
 		in, err := bufio.NewReader(os.Stdin).ReadString('\n')
@@ -345,7 +344,7 @@ func run(cmd *cobra.Command, args []string) {
 		}
 	}
 
-	if err := coach.RunScript(*toRun, scriptArgs); err != nil {
+	if err := coach.RunScript(*toRun, scriptArgs, configureIO); err != nil {
 		handleErr(err)
 	}
 }
@@ -362,6 +361,12 @@ func handleErrExit(e error, shouldExit bool) {
 			os.Exit(1)
 		}
 	}
+}
+
+func configureIO(cmd *exec.Cmd) {
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
 }
 
 func Slugify(content string, length uint) string {

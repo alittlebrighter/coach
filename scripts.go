@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"os/user"
 	"path/filepath"
 	"strings"
@@ -133,7 +134,7 @@ func EditScript(alias string, store ScriptStore) (*models.DocumentedScript, erro
 	return &newScript, nil
 }
 
-func RunScript(script models.DocumentedScript, args []string) error {
+func RunScript(script models.DocumentedScript, args []string, configureIO func(*exec.Cmd)) error {
 	shell := platforms.GetShell(script.GetScript().GetShell())
 
 	toRun, cleanup, err := shell.BuildCommand(script.GetScript().GetContent(), args)
@@ -143,9 +144,7 @@ func RunScript(script models.DocumentedScript, args []string) error {
 	if err != nil {
 		return err
 	}
-	toRun.Stdin = os.Stdin
-	toRun.Stdout = os.Stdout
-	toRun.Stderr = os.Stderr
+	configureIO(toRun)
 	toRun.Run()
 
 	return nil
