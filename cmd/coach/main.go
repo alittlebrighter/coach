@@ -363,10 +363,11 @@ func handleErrExit(e error, shouldExit bool) {
 	}
 }
 
-func configureIO(cmd *exec.Cmd) {
+func configureIO(cmd *exec.Cmd) error {
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
+	return nil
 }
 
 func Slugify(content string, length uint) string {

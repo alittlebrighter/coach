@@ -134,7 +134,7 @@ func EditScript(alias string, store ScriptStore) (*models.DocumentedScript, erro
 	return &newScript, nil
 }
 
-func RunScript(script models.DocumentedScript, args []string, configureIO func(*exec.Cmd)) error {
+func RunScript(script models.DocumentedScript, args []string, configureIO func(*exec.Cmd) error) error {
 	shell := platforms.GetShell(script.GetScript().GetShell())
 
 	toRun, cleanup, err := shell.BuildCommand(script.GetScript().GetContent(), args)
@@ -144,7 +144,9 @@ func RunScript(script models.DocumentedScript, args []string, configureIO func(*
 	if err != nil {
 		return err
 	}
-	configureIO(toRun)
+	if err := configureIO(toRun); err != nil {
+		return err
+	}
 	toRun.Run()
 
 	return nil
