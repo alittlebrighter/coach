@@ -10,6 +10,7 @@ import (
 
 	coach "github.com/alittlebrighter/coach-pro"
 	"github.com/alittlebrighter/coach-pro/storage/database"
+	"github.com/alittlebrighter/coach-pro/trial"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"gopkg.in/yaml.v2"
@@ -17,16 +18,9 @@ import (
 
 var (
 	home string
-
-	version = "PRO"
 )
 
 func main() {
-	if err := checkTrial(); err != nil {
-		fmt.Println(err)
-		os.Exit(0)
-	}
-
 	// Find home directory.
 	home = coach.HomeDir()
 	os.Mkdir(home, os.ModePerm)
@@ -36,9 +30,9 @@ func main() {
 		Use:   "coach",
 		Short: "A tool to help you save and document common commands executed on the command line.",
 		Long: fmt.Sprintf("Coach %s: %s\n%s\nConfiguration: %s\nScript DB: %s\n\nFor support contact support.coach@mg.alittlebrighter.io",
-			version,
+			trial.Version,
 			"Save, document, query, and run all of your scripts.",
-			expireNotice,
+			trial.ExpireNotice,
 			home+"/config.yaml",
 			home+"/coach.db",
 		),
