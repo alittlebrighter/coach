@@ -56,7 +56,7 @@ func main() {
 
 	docCmd := &cobra.Command{
 		Use:     "lib",
-		Short:   "Save and query commands with tags and documentation.  Default is to document the most recent command.",
+		Short:   "Save and query scripts/commands with tags and documentation.  Default is to save and document the most recent command.",
 		Example: "coach doc [alias] [tags] [comment] # empty alias represented by \"\", tag list must be quoted if it contains spaces",
 		Run:     doc,
 	}
