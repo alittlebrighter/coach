@@ -6,7 +6,7 @@ option go_package = "proto";
 
 import "coach.proto";
 
-service Sample {
+service CoachRPC {
     rpc Scripts(ScriptsQuery) returns (GetScriptsResponse);
     rpc RunScript(stream RunEventIn) returns (stream RunEventOut);
 
