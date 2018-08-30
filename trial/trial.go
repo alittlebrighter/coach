@@ -29,7 +29,6 @@ func init() {
 }
 
 func checkTrial() error {
-	fmt.Println("trial:", TRIAL_DATE_LENGTH)
 	if strings.TrimSpace(TRIAL_DATE_LENGTH) == "" {
 		return nil
 	}
