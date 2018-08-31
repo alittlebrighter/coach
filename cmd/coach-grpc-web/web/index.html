@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>
+        CoachUI
+    </title>
+</head>
+
+<body>
+    <h2>CoachUI</h2>
+    <input type="text" id="query" />
+    <button id="search">Search</button>
+    <div id="scripts-results"></div>
+    <br>
+    <h3 id="running-header"></h3>
+    <div id="running-output"></div>
+    <div id="input-holder" style="display: none;">
+    <label>
+        Input
+        <input type="text" id="input" />
+    </label>
+    <button id="submit-input">Submit</button>
+</div>
+
+    <script type="text/javascript">
+        function init() {
+            document.getElementById("search").onclick = requestScripts;
+            document.getElementById("submit-input").onclick = submitInput;
+        }
+
+        const EOF = "!!!EOF!!!";
+
+        var data = {
+            socket: new WebSocket("ws://localhost:2015/ws/rpc"),
+            socketReady: false,
+            tagQuery: "?",
+            scripts: [],
+            running: {}
+        },
+        runningOutput = document.getElementById("running-output");
+
+        data.socket.onopen = () => {
+            data.socketReady = true;
+        };
+        data.socket.onmessage = (e) => {
+            console.log("ws message received");
+
+            var msg = JSON.parse(e.data);
+
+            switch (msg.method) {
+                case "getScripts":
+                    data.scripts = msg.output.scripts;
+                    renderScripts(data.scripts);
+                    break;
+                case "runScript":
+                    if (msg.output == EOF) {
+
+                        runningOutput.innerHTML += "<br><br>Script completed."
+                        data.running = {};
+                        return
+                    }
+                    data.running = msg;
+                    console.log(msg.output);
+                    runningOutput.innerHTML += "<br>&gt; " + msg.output.replace(/\\n/g, "<br>");
+                    break;
+            }
+        };
+
+        function renderScripts(scripts) {
+            var scriptsList = "<ul>";
+            console.log("scripts length:", scripts.length);
+            for (var i = 0; i < scripts.length; i++) {
+                scriptsList += "<li><button onclick=\"runScript('"+scripts[i].alias+"');\">Run</button>&nbsp" + 
+                    scripts[i].alias + " - " + scripts[i].documentation + "</li>"
+            }
+            scriptsList += "</ul>";
+
+            document.getElementById("scripts-results").innerHTML = scriptsList;
+        }
+
+        function requestScripts() {
+            if (!data.socketReady) {
+                console.log("socket not ready yet");
+                return
+            }
+
+            var payload = JSON.stringify({
+                method: "getScripts",
+                input: document.getElementById("query").value
+            });
+            console.log("sending:", payload);
+            data.socket.send(payload);
+        }
+
+        function runScript(alias) {
+            document.getElementById("running-header").innerText = "Running " + alias
+            document.getElementById("input-holder").style.display = "block";
+
+            data.socket.send(JSON.stringify({
+                method: "runScript",
+                input: alias
+            }));
+        }
+
+        function submitInput() {
+            data.socket.send(JSON.stringify({
+                id: data.running.id || "",
+                method: "runScript",
+                input: document.getElementById("input").value
+            }));
+        }
+
+        init();
+    </script>
+</body>
+
+</html>

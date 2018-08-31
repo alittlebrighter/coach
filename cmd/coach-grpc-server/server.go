@@ -28,7 +28,8 @@ func main() {
 
 	svc := &CoachRPC{GetStore: coach.GetStore}
 
-	listen, err := net.Listen("tcp", ":4444")
+	// listen on 8326 (TEAM on a number pad)
+	listen, err := net.Listen("tcp", ":8326")
 	if err != nil {
 		log.Fatalf("failed to listen for tcp connections: %v", err)
 	}
