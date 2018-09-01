@@ -36,7 +36,9 @@
             socketReady: false,
             tagQuery: "?",
             scripts: [],
-            running: {}
+            running: {},
+            lastOutput: "",
+            lastError: ""
         },
         runningOutput = document.getElementById("running-output");
 
@@ -44,7 +46,7 @@
             data.socketReady = true;
         };
         data.socket.onmessage = (e) => {
-            console.log("ws message received");
+            console.log("ws message received", e.data);
 
             var msg = JSON.parse(e.data);
 
@@ -54,15 +56,29 @@
                     renderScripts(data.scripts);
                     break;
                 case "runScript":
-                    if (msg.output == EOF) {
+                    data.running = msg;
 
+                    if (msg["output"]) {
+                        data.lastOutput = msg.output;
+                        if (msg.output !== EOF) {
+                            runningOutput.innerHTML += "<br>&gt; " + msg.output.replace(/\\n/g, "<br>");
+                        }
+                    }
+
+                    if (msg["error"]) {
+                        data.lastError = msg.error;
+                        if (msg.error !== EOF) {
+                            runningOutput.innerHTML += "<br><span style=\"color:red;\">&gt; " + msg.error.replace(/\\n/g, "<br>") + "</span>";   
+                        }
+                    }
+
+                    console.log("last msgs:", data.lastOutput, data.lastError);
+
+                    if (data.lastOutput == EOF && data.lastError == EOF) {
+                        document.getElementById("input-holder").style.display = "none";
                         runningOutput.innerHTML += "<br><br>Script completed."
                         data.running = {};
-                        return
                     }
-                    data.running = msg;
-                    console.log(msg.output);
-                    runningOutput.innerHTML += "<br>&gt; " + msg.output.replace(/\\n/g, "<br>");
                     break;
             }
         };
@@ -95,7 +111,11 @@
 
         function runScript(alias) {
             document.getElementById("running-header").innerText = "Running " + alias
+            runningOutput.innerHTML = "";
             document.getElementById("input-holder").style.display = "block";
+
+            data.lastOutput = "";
+            data.lastError = "";
 
             data.socket.send(JSON.stringify({
                 method: "runScript",
@@ -109,6 +129,7 @@
                 method: "runScript",
                 input: document.getElementById("input").value
             }));
+            document.getElementById("input").value = "";
         }
 
         init();

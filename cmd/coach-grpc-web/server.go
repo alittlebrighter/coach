@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"io"
 	"log"
 	"net/http"
 	"sync"
@@ -78,6 +77,7 @@ func (a *appContext) GetScripts(req *RPCCall, out chan *RPCCall) {
 }
 
 func (a *appContext) RunScript(req *RPCCall, in, out chan *RPCCall) {
+	log.Println("started runScript")
 	streams, err := a.rpcClient.RunScript(context.Background())
 	if err != nil {
 		log.Fatalln(err)
@@ -86,54 +86,66 @@ func (a *appContext) RunScript(req *RPCCall, in, out chan *RPCCall) {
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 	incoming := make(chan *pb.RunEventOut)
+	stdoutClosed, stderrClosed := false, false
 	go func() {
-		for {
+	main:
+		for !stdoutClosed || !stderrClosed {
 			outEvent, err := streams.Recv()
-
-			if err == io.EOF || outEvent.GetOutput() == EOF {
-				if len(outEvent.GetOutput()) > 0 && outEvent.GetOutput() != EOF {
-					incoming <- outEvent
-				} else {
-					incoming <- &pb.RunEventOut{Output: EOF}
-					break
-				}
-			} else if err != nil {
-				log.Println("ERROR:", err)
-				incoming <- &pb.RunEventOut{Output: EOF}
-				break
-			} else {
+			if outEvent != nil {
 				incoming <- outEvent
 			}
+
+			if err != nil {
+				log.Println("incoming stream:", err)
+				incoming <- &pb.RunEventOut{Output: EOF}
+				incoming <- &pb.RunEventOut{Error: EOF}
+				break main
+			}
 		}
+		close(incoming)
 		wg.Done()
+		log.Println("stopped receiving response stream")
 	}()
 
 	streams.Send(&pb.RunEventIn{Input: req.Input, ResponseSize: 256})
 
-inputLoop:
-	for {
-		response := &(*req)
-
+	for !stdoutClosed || !stderrClosed {
 		select {
-		case event, ok := <-incoming:
-			if event.GetOutput() == EOF || !ok {
-				response.Output = EOF
-				out <- response
-				break inputLoop
+		case event, chanOk := <-incoming:
+			// hackish way of copying req and getting pointer to the copy
+			response := &(*req)
+
+			stdoutClosed = stdoutClosed || event.GetOutput() == EOF
+			stderrClosed = stderrClosed || event.GetError() == EOF
+			switch {
+			case !chanOk:
+				log.Println("!chanOk")
+				fallthrough
+			case len(event.GetOutput()) == 0 && len(event.GetError()) == 0:
+				log.Println("setting both closed")
+				stdoutClosed, stderrClosed = true, true
 			}
+
 			response.Output = event.GetOutput()
+			response.Error = event.GetError()
+
 			out <- response
 		case input := <-in:
 			streams.Send(&pb.RunEventIn{Input: input.Input})
 		}
 	}
 
+	out <- &RPCCall{Id: req.Id, Method: req.Method, Output: EOF, Error: EOF}
+	streams.Send(&pb.RunEventIn{Input: EOF})
 	streams.CloseSend()
-
+	log.Println("sent CloseSend")
 	wg.Wait()
+
+	stdoutClosed, stderrClosed = true, true
 
 	close(in)
 	delete(a.ActiveInputs, req.Id)
+	log.Println("finished runScript")
 }
 
 var upgrader = websocket.Upgrader{} // use default options
@@ -185,8 +197,8 @@ func (a *appContext) rpc(w http.ResponseWriter, r *http.Request) {
 	}()
 
 	go func() {
-		for {
-			err = c.WriteJSON(<-wsOut)
+		for out := range wsOut {
+			err = c.WriteJSON(out)
 			if err != nil {
 				log.Println("ws write:", err)
 				break

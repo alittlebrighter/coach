@@ -9,9 +9,6 @@ import "coach.proto";
 service CoachRPC {
     rpc Scripts(ScriptsQuery) returns (GetScriptsResponse);
     rpc RunScript(stream RunEventIn) returns (stream RunEventOut);
-
-    // this gets interesting in the implementation
-    // rpc LifoEcho(stream Val) returns (stream Val);
 }
 
 message ScriptsQuery {
@@ -35,9 +32,10 @@ message RunEventIn {
 
 message RunEventOut {
     string output = 1;
+    string error = 2;
 
     // exitCode means nothing until stream finishes
-    int32 exitCode = 2;
+    int32 exitCode = 3;
 }
 
 message EnvVar {
