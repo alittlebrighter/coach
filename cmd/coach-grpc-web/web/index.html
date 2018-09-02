@@ -36,7 +36,7 @@
             socketReady: false,
             tagQuery: "?",
             scripts: [],
-            running: {},
+            running: {id: "", method: "", complete: false},
             lastOutput: "",
             lastError: ""
         },
@@ -56,7 +56,7 @@
                     renderScripts(data.scripts);
                     break;
                 case "runScript":
-                    data.running = msg;
+                    data.running.id = msg.id;
 
                     if (msg["output"]) {
                         data.lastOutput = msg.output;
@@ -74,10 +74,10 @@
 
                     console.log("last msgs:", data.lastOutput, data.lastError);
 
-                    if (data.lastOutput == EOF && data.lastError == EOF) {
+                    if (!data.running.complete && data.lastOutput == EOF && data.lastError == EOF) {
                         document.getElementById("input-holder").style.display = "none";
                         runningOutput.innerHTML += "<br><br>Script completed."
-                        data.running = {};
+                        data.running = {id: "", method: "", complete: true};
                     }
                     break;
             }
@@ -121,14 +121,17 @@
                 method: "runScript",
                 input: alias
             }));
+            data.running = {method: "runScript", complete: false};
         }
 
         function submitInput() {
-            data.socket.send(JSON.stringify({
+            var payload = {
                 id: data.running.id || "",
                 method: "runScript",
                 input: document.getElementById("input").value
-            }));
+            };
+            console.log("sending:", JSON.stringify(payload));
+            data.socket.send(JSON.stringify(payload));
             document.getElementById("input").value = "";
         }
 

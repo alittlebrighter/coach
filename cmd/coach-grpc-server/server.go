@@ -65,6 +65,8 @@ func (c *CoachRPC) RunScript(streams pb.CoachRPC_RunScriptServer) error {
 		return err
 	}
 
+	shutdown := false
+
 	var alias string
 	args := []string{}
 	cmdArgs := strings.Fields(initEvent.GetInput())
@@ -86,6 +88,8 @@ func (c *CoachRPC) RunScript(streams pb.CoachRPC_RunScriptServer) error {
 	}
 
 	IOStreams := new(ioStreams)
+	defer IOStreams.Close()
+
 	wg := new(sync.WaitGroup)
 	wg.Add(1)
 
@@ -120,6 +124,7 @@ func (c *CoachRPC) RunScript(streams pb.CoachRPC_RunScriptServer) error {
 			}
 
 			streams.Send(&pb.RunEventOut{Output: out})
+			log.Println("sent StdOut:", out)
 		}
 		err := streams.Send(&pb.RunEventOut{Output: EOF})
 		wg.Done()
@@ -133,6 +138,7 @@ func (c *CoachRPC) RunScript(streams pb.CoachRPC_RunScriptServer) error {
 			}
 
 			streams.Send(&pb.RunEventOut{Error: err})
+			log.Println("sent StdErr:", err)
 		}
 		err := streams.Send(&pb.RunEventOut{Error: EOF})
 		wg.Done()
@@ -143,25 +149,26 @@ func (c *CoachRPC) RunScript(streams pb.CoachRPC_RunScriptServer) error {
 	input := make(chan string)
 	go func() {
 	main:
-		for {
+		for !shutdown {
 			inEvent, err := streams.Recv()
 			if err == io.EOF || inEvent.GetInput() == EOF {
-				close(input)
 				break main
 			}
 			input <- inEvent.GetInput()
 		}
+		close(input)
 		log.Println("input stream closed")
 	}()
 	go func() {
 		for in := range input {
 			IOStreams.Stdin.Write([]byte(strings.TrimSpace(in) + platforms.Newline(1)))
+			log.Println("sent StdIn:", in)
 		}
-		IOStreams.Stdin.Close()
 		log.Println("closed stdin stream")
 	}()
 
 	err = <-runErr
+	shutdown = true
 	log.Println("finished RunScript")
 	return err
 }
@@ -191,16 +198,27 @@ type ioStreams struct {
 	Stderr io.ReadCloser
 }
 
+func (s *ioStreams) Close() {
+	s.Stdin.Close()
+	s.Stderr.Close()
+	s.Stdout.Close()
+}
+
 func parseStream(stream io.ReadCloser, output chan string, buffSize uint32) {
 	buffer := make([]byte, buffSize)
 parseLoop:
 	for {
 		readCount, err := stream.Read(buffer)
+
 		switch {
 		case err == nil:
-			output <- string(buffer[:readCount-1])
+			for _, line := range processOutput(buffer[:readCount-1]) {
+				output <- line
+			}
 		case err == io.EOF && readCount > 0:
-			output <- string(buffer[:readCount-1])
+			for _, line := range processOutput(buffer[:readCount-1]) {
+				output <- line
+			}
 			fallthrough
 		case err == io.EOF && readCount == 0:
 			output <- EOF
@@ -210,5 +228,9 @@ parseLoop:
 		}
 	}
 	close(output)
-	stream.Close()
+}
+
+func processOutput(data []byte) []string {
+	str := string(data)
+	return strings.Split(str, platforms.Newline(1))
 }

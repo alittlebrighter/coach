@@ -113,7 +113,7 @@ func (a *appContext) RunScript(req *RPCCall, in, out chan *RPCCall) {
 		select {
 		case event, chanOk := <-incoming:
 			// hackish way of copying req and getting pointer to the copy
-			response := &(*req)
+			response := &RPCCall{Id: req.Id, Method: req.Method}
 
 			stdoutClosed = stdoutClosed || event.GetOutput() == EOF
 			stderrClosed = stderrClosed || event.GetError() == EOF
@@ -124,14 +124,16 @@ func (a *appContext) RunScript(req *RPCCall, in, out chan *RPCCall) {
 			case len(event.GetOutput()) == 0 && len(event.GetError()) == 0:
 				log.Println("setting both closed")
 				stdoutClosed, stderrClosed = true, true
+			default:
+				response.Output = event.GetOutput()
+				response.Error = event.GetError()
+
+				out <- response
+				log.Println("sent to WS:", response)
 			}
-
-			response.Output = event.GetOutput()
-			response.Error = event.GetError()
-
-			out <- response
 		case input := <-in:
 			streams.Send(&pb.RunEventIn{Input: input.Input})
+			log.Println("sent input to RPC server:", input.Input)
 		}
 	}
 
@@ -189,7 +191,7 @@ func (a *appContext) rpc(w http.ResponseWriter, r *http.Request) {
 				if !exists {
 					continue
 				}
-
+				log.Println("received from WS:", req.Input)
 				input <- req
 			}
 		}
