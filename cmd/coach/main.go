@@ -334,7 +334,7 @@ func run(cmd *cobra.Command, args []string) {
 		scriptArgs = args[1:]
 	}
 
-	if confirmed, cErr := cmd.Flags().GetBool("confirm"); cErr != nil || !confirmed {
+	if check, _ := cmd.Flags().GetBool("check"); check {
 		fmt.Printf("Command '%s' found:\n###\n%s\n###\n$ %s\n\n", toRun.GetAlias(), toRun.GetDocumentation(), Slugify(toRun.GetScript().GetContent(), 48))
 		fmt.Print("Run now? [y/n] ")
 		in, err := bufio.NewReader(os.Stdin).ReadString('\n')

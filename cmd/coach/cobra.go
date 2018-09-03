@@ -82,7 +82,7 @@ func main() {
 		Short: "Run a saved and documented command referenced by alias.",
 		Run:   run,
 	}
-	runCmd.Flags().BoolP("confirm", "c", false, "Run the command immediately without review.")
+	runCmd.Flags().BoolP("check", "c", false, "Review the command documentation before running.")
 
 	rootCmd.AddCommand(
 		//	sessionCmd,
