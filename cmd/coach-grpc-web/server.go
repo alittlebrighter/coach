@@ -160,6 +160,8 @@ func (a *appContext) rpc(w http.ResponseWriter, r *http.Request) {
 	}
 	defer c.Close()
 
+	log.Println("new ws connection")
+
 	wsOut := make(chan *RPCCall, 5)
 
 	wg := sync.WaitGroup{}
@@ -174,13 +176,13 @@ func (a *appContext) rpc(w http.ResponseWriter, r *http.Request) {
 
 			if len(req.Id) == 0 {
 				req.Id = xid.New().String()
+			}
 
-				if req.Method == "runScript" {
-					input := make(chan *RPCCall, 5)
-					a.ActiveInputs[req.Id] = input
-					go a.RunScript(req, input, wsOut)
-					continue
-				}
+			if _, exists := a.ActiveInputs[req.Id]; req.Method == "runScript" && !exists {
+				input := make(chan *RPCCall, 5)
+				a.ActiveInputs[req.Id] = input
+				go a.RunScript(req, input, wsOut)
+				continue
 			}
 
 			switch req.Method {

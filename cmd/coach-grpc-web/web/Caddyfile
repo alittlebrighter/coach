@@ -1,0 +1,9 @@
+http://localhost:2015
+
+proxy / localhost:8080
+
+proxy /ws localhost:8327 {
+    without /ws
+    websocket
+    transparent
+}

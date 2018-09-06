@@ -1,0 +1,116 @@
+<template>
+  <div>
+    <h2 mdl-cell mdl-cell--12-col>Running {{ alias }}</h2><br>
+    <button @click="run();" class="mdl-button mdl-js-button mdl-button--raised mdl-color--light-green-200" id="start-button">
+      <span v-show="lines.length > 0">Re</span>Start
+    </button>
+
+    <div v-show="lines.length > 0" class="run mdl-grid">
+    <!--
+    <ul class="mdl-list mdl-cell mdl-cell--10-col mdl-color--blue-grey-100">
+      <li v-for="(line, key, i) in lines" :key="i" v-show="line.content !== EOF" class="mdl-list__item">
+        <span :class="{'mdl-list__item-primary-content': true, red: line.error}">
+          <span v-html="line.content"></span>
+        </span>
+      </li>
+    </ul>
+    -->
+    <div class="mdl-color--blue-grey-800 mdl-color-text--light-green-200 mdl-cell mdl-cell--10-col console">
+      <div v-for="(line, key, i) in lines" :key="i" v-show="line.content !== EOF" v-html="line.content" :class="{red: line.error}"></div>
+      <form v-show="lines.length > 0 && (!stdoutEOF || !stderrEOF)" onsubmit="return false;" class="mdl-cell mdl-cell--4-col">
+      <div id="stdin-form" class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
+        <input v-model="stdin" class="mdl-textfield__input" type="text" id="stdin-box">
+        <label class="mdl-textfield__label" for="stdin-box">Standard Input</label>
+      </div>
+      <button @click="sendInput(stdin)" class="mdl-button mdl-js-button mdl-button--icon">
+        <i class="far fa-sign-in"></i>
+      </button>
+    </form>
+    </div>
+    
+    </div>
+  </div>
+</template>
+
+<script>
+import server from "@/server/websocket";
+
+const ws = server();
+
+export default {
+  data () {
+    var alias = this.$route.params.alias || "No script selected.";
+
+    return {
+      EOF: "!!!EOF!!!",
+      alias: alias,
+      stdin: "",
+      isRunning: false,
+      lines: [],
+      requestId: "",
+      stdoutEOF: true,
+      stderrEOF: true
+    };
+  },
+  methods: {
+    run () {
+      this.isRunning = true;
+      this.stdoutEOF = false;
+      this.stderrEOF = false;
+      this.lines = []; 
+      this.requestId = ws.runScript(this.alias, this.parseResponse);
+      console.log("running script");
+    },
+    parseResponse (response, unsub) {
+      console.log(JSON.stringify(response));
+
+      if (response["output"]) {
+        this.lines.push({content: response.output.replace(/\\n/g, "<br>"), error: false});
+        this.stdoutEOF = response.output === this.EOF;
+      }
+
+      if (response["error"]) {
+        this.lines.push({content: response.error.replace(/\\n/g, "<br>"), error: true});
+        this.stderrEOF = response.error === this.EOF;
+      }
+
+      if (this.stdoutEOF && this.stderrEOF) {
+        this.isRunning = false;
+        unsub();
+      }
+    },
+    sendInput (input) {
+       ws.sendInput(this.requestId, input || this.stdin);
+    }
+  }
+};
+</script>
+
+<style scoped>
+  .red {
+    color: #ff4c4c;
+  }
+
+  form {
+    vertical-align: bottom;
+  }
+
+  li {
+    margin-top: .1em;
+    margin-bottom: .1em;
+  }
+
+  #start-button {
+    margin-left: 1.5em;
+  }
+
+  .console {
+    padding: 1em;
+    font-size: 1.5em;
+  }
+
+  .console > div {
+    margin: .5em;
+  }
+</style>
+
