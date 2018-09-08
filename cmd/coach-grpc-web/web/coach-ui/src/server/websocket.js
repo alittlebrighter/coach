@@ -9,7 +9,7 @@ function init() {
     return;
   }
 
-  socket = new WebSocket("ws://localhost:2015/ws/rpc")
+  socket = new WebSocket("ws://" + window.location.hostname + "/ws/rpc")
 
   socket.onopen = () => {
     socketReady = true;
