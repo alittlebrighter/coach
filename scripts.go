@@ -34,7 +34,8 @@ func QueryScripts(query string, store ScriptStore) (scripts []models.DocumentedS
 }
 
 func SaveScript(toSave models.DocumentedScript, overwrite bool, store ScriptStore) (err error) {
-	if toSave.GetScript() == nil || len(strings.TrimSpace(toSave.GetScript().GetContent())) == 0 {
+	if len(strings.TrimSpace(toSave.GetDocumentation())) == 0 &&
+		(toSave.GetScript() == nil || len(strings.TrimSpace(toSave.GetScript().GetContent())) == 0) {
 		return errors.New("no script to save")
 	}
 
