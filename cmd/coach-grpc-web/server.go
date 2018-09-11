@@ -12,9 +12,8 @@ import (
 	"google.golang.org/grpc"
 
 	pb "github.com/alittlebrighter/coach-pro/gen/proto"
+	"github.com/alittlebrighter/coach-pro/grpc"
 )
-
-const EOF = "!!!EOF!!!"
 
 var json = jsoniter.ConfigCompatibleWithStandardLibrary
 
@@ -61,10 +60,10 @@ func (a *appContext) CloseRPC() error {
 
 func (a *appContext) GetScripts(req *RPCCall, out chan *RPCCall) {
 	if len(req.Input) == 0 {
-		req.Input = "?"
+		req.Input = []byte("?")
 	}
 
-	scripts, err := a.rpcClient.Scripts(context.Background(), &pb.ScriptsQuery{TagQuery: req.Input})
+	scripts, err := a.rpcClient.Scripts(context.Background(), &pb.ScriptsQuery{TagQuery: string(req.Input)})
 	if err != nil {
 		req.Error = "rpc client: " + err.Error()
 		out <- req
@@ -74,6 +73,25 @@ func (a *appContext) GetScripts(req *RPCCall, out chan *RPCCall) {
 	req.Output = scripts
 	out <- req
 	return
+}
+
+func (a *appContext) SaveScript(req *RPCCall, out chan *RPCCall) {
+	response := &(*req)
+	response.Input = nil
+
+	var script pb.DocumentedScript
+	if err := json.Unmarshal(req.Input, &script); err != nil {
+		log.Println("savescript:", err)
+		response.Error = err.Error()
+	}
+
+	var err error
+	response.Output, err = a.rpcClient.SaveScript(context.Background(), &pb.SaveScriptRequest{Script: &script})
+	if err != nil {
+		response.Error = err.Error()
+	}
+
+	out <- response
 }
 
 func (a *appContext) RunScript(req *RPCCall, in, out chan *RPCCall) {
@@ -97,8 +115,8 @@ func (a *appContext) RunScript(req *RPCCall, in, out chan *RPCCall) {
 
 			if err != nil {
 				log.Println("incoming stream:", err)
-				incoming <- &pb.RunEventOut{Output: EOF}
-				incoming <- &pb.RunEventOut{Error: EOF}
+				incoming <- &pb.RunEventOut{Output: coachrpc.EOF}
+				incoming <- &pb.RunEventOut{Error: coachrpc.EOF}
 				break main
 			}
 		}
@@ -107,7 +125,7 @@ func (a *appContext) RunScript(req *RPCCall, in, out chan *RPCCall) {
 		log.Println("stopped receiving response stream")
 	}()
 
-	streams.Send(&pb.RunEventIn{Input: req.Input, ResponseSize: 256})
+	streams.Send(&pb.RunEventIn{Input: string(req.Input), ResponseSize: 256})
 
 	for !stdoutClosed || !stderrClosed {
 		select {
@@ -115,8 +133,8 @@ func (a *appContext) RunScript(req *RPCCall, in, out chan *RPCCall) {
 			// hackish way of copying req and getting pointer to the copy
 			response := &RPCCall{Id: req.Id, Method: req.Method}
 
-			stdoutClosed = stdoutClosed || event.GetOutput() == EOF
-			stderrClosed = stderrClosed || event.GetError() == EOF
+			stdoutClosed = stdoutClosed || event.GetOutput() == coachrpc.EOF
+			stderrClosed = stderrClosed || event.GetError() == coachrpc.EOF
 			switch {
 			case !chanOk:
 				log.Println("!chanOk")
@@ -132,13 +150,13 @@ func (a *appContext) RunScript(req *RPCCall, in, out chan *RPCCall) {
 				log.Println("sent to WS:", response)
 			}
 		case input := <-in:
-			streams.Send(&pb.RunEventIn{Input: input.Input})
+			streams.Send(&pb.RunEventIn{Input: string(input.Input)})
 			log.Println("sent input to RPC server:", input.Input)
 		}
 	}
 
-	out <- &RPCCall{Id: req.Id, Method: req.Method, Output: EOF, Error: EOF}
-	streams.Send(&pb.RunEventIn{Input: EOF})
+	out <- &RPCCall{Id: req.Id, Method: req.Method, Output: coachrpc.EOF, Error: coachrpc.EOF}
+	streams.Send(&pb.RunEventIn{Input: coachrpc.EOF})
 	streams.CloseSend()
 	log.Println("sent CloseSend")
 	wg.Wait()
@@ -195,6 +213,8 @@ func (a *appContext) rpc(w http.ResponseWriter, r *http.Request) {
 				}
 				log.Println("received from WS:", req.Input)
 				input <- req
+			case "saveScript":
+				go a.SaveScript(req, wsOut)
 			}
 		}
 		wg.Done()
@@ -218,7 +238,7 @@ func (a *appContext) rpc(w http.ResponseWriter, r *http.Request) {
 type RPCCall struct {
 	Id     string      `json:"id"`
 	Method string      `json:"method"`
-	Input  string      `json:"input"`
+	Input  []byte      `json:"input"`
 	Output interface{} `json:"output"`
 	Error  string      `json:"error"`
 }
