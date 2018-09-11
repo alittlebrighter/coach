@@ -21,6 +21,8 @@ It has these top-level messages:
 	RunEventIn
 	RunEventOut
 	EnvVar
+	SaveScriptRequest
+	Response
 */
 package proto
 
