@@ -220,6 +220,7 @@ func UnmarshalEdit(contents string) (ds models.DocumentedScript, err error) {
 	ds.Script = new(models.Script)
 
 	parts := strings.Split(contents, platforms.Newline(1))
+	var shell platforms.Shell
 	var inDoc, docStarted, inScript, scriptStarted bool
 	for _, p := range parts {
 		part := strings.TrimSpace(p)
@@ -244,6 +245,8 @@ func UnmarshalEdit(contents string) (ds models.DocumentedScript, err error) {
 			inScript, scriptStarted = false, false
 		case strings.Contains(part, "-SHELL- ="):
 			ds.Script.Shell = strings.TrimSpace(strings.Split(part, "=")[1])
+			// this must happen before we get down to the documentation or script
+			shell = platforms.GetShell(ds.Script.Shell)
 
 			inDoc, docStarted = false, false
 			inScript, scriptStarted = false, false
@@ -262,7 +265,7 @@ func UnmarshalEdit(contents string) (ds models.DocumentedScript, err error) {
 		}
 
 		if inDoc {
-			ds.Documentation += strings.TrimRight(strings.Replace(strings.TrimLeft(p, "/#"), " ", "", 1), "\t ") + platforms.Newline(1)
+			ds.Documentation += strings.TrimSpace(strings.TrimLeft(p, shell.LineComment())) + platforms.Newline(1)
 		} else if inScript {
 			ds.Script.Content += p + platforms.Newline(1)
 		}
