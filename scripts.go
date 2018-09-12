@@ -128,7 +128,7 @@ func EditScript(alias string, store ScriptStore) (*models.DocumentedScript, erro
 	}
 
 	var newScript models.DocumentedScript
-	if newScript, err = UnmarshalEdit(string(newContents)); err != nil {
+	if newScript, err = UnmarshalEdit(string(newContents), script.GetScript().GetShell()); err != nil {
 		return nil, err
 	}
 
@@ -210,7 +210,7 @@ func MarshalEdit(s models.DocumentedScript) []byte {
 	return []byte(contents.String())
 }
 
-func UnmarshalEdit(contents string) (ds models.DocumentedScript, err error) {
+func UnmarshalEdit(contents, originalShell string) (ds models.DocumentedScript, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			err = errors.New("could not parse file")
@@ -220,7 +220,7 @@ func UnmarshalEdit(contents string) (ds models.DocumentedScript, err error) {
 	ds.Script = new(models.Script)
 
 	parts := strings.Split(contents, platforms.Newline(1))
-	var shell platforms.Shell
+	shell := platforms.GetShell(originalShell)
 	var inDoc, docStarted, inScript, scriptStarted bool
 	for _, p := range parts {
 		part := strings.TrimSpace(p)
@@ -245,8 +245,9 @@ func UnmarshalEdit(contents string) (ds models.DocumentedScript, err error) {
 			inScript, scriptStarted = false, false
 		case strings.Contains(part, "-SHELL- ="):
 			ds.Script.Shell = strings.TrimSpace(strings.Split(part, "=")[1])
-			// this must happen before we get down to the documentation or script
-			shell = platforms.GetShell(ds.Script.Shell)
+			if len(originalShell) == 0 {
+				shell = platforms.GetShell(ds.Script.Shell)
+			}
 
 			inDoc, docStarted = false, false
 			inScript, scriptStarted = false, false
