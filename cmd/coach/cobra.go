@@ -110,6 +110,10 @@ func main() {
 
 // initConfig reads in config file and ENV variables if set.
 func initConfig() {
+	if _, err := os.Stat(coach.DBPath); err != nil {
+		coach.GetStore(false).Close()
+	}
+
 	viper.SetTypeByDefaultValue(true)
 	viper.SetDefault("history.maxlines", 1000)
 	viper.SetDefault("history.reps-pre-doc-prompt", 3)
