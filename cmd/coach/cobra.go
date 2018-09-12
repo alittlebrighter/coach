@@ -111,7 +111,9 @@ func main() {
 // initConfig reads in config file and ENV variables if set.
 func initConfig() {
 	if _, err := os.Stat(coach.DBPath); err != nil {
-		coach.GetStore(false).Close()
+		store := coach.GetStore(false)
+		store.Init()
+		store.Close()
 	}
 
 	viper.SetTypeByDefaultValue(true)

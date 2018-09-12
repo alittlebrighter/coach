@@ -47,10 +47,6 @@ type BoltDB struct {
 func NewBoltDB(path string, readonly bool) (b *BoltDB, err error) {
 	b = new(BoltDB)
 	b.db, err = bolt.Open(path, FilePerms, &bolt.Options{Timeout: 2 * time.Second, ReadOnly: readonly})
-	if err != nil {
-		return
-	}
-	err = b.initDB()
 	return
 }
 
@@ -59,7 +55,7 @@ func (b *BoltDB) Close() error {
 	return b.db.Close()
 }
 
-func (b *BoltDB) initDB() error {
+func (b *BoltDB) Init() error {
 	if b.db.IsReadOnly() {
 		return nil
 	}

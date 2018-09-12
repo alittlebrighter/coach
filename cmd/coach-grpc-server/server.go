@@ -59,6 +59,12 @@ func main() {
 	os.Mkdir(home, os.ModePerm)
 	coach.DBPath = home + "/coach.db"
 
+	if _, err := os.Stat(coach.DBPath); err != nil {
+		store := coach.GetStore(false)
+		store.Init()
+		store.Close()
+	}
+
 	rootCmd := &cobra.Command{
 		Use:   "coach-grpc-server",
 		Short: "Coach script library functions available over a GRPC interface.",
