@@ -70,7 +70,7 @@ func main() {
 		Short: "Coach script library functions available over a GRPC interface.",
 		Run:   appMain,
 	}
-	rootCmd.Flags().String("rpc-uri", ":8326", "URI to host GRPC server.")
+	rootCmd.Flags().String("rpc-uri", "localhost:8326", "URI to host GRPC server.")
 	rootCmd.Flags().String("web-rpc-uri", "", "URI to host the RPC web server. "+
 		"Web server will not start if this value is blank.")
 
