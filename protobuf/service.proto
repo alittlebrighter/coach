@@ -9,6 +9,7 @@ import "coach.proto";
 service CoachRPC {
     rpc Scripts(ScriptsQuery) returns (GetScriptsResponse);
     rpc RunScript(stream RunEventIn) returns (stream RunEventOut);
+    rpc SaveScript(SaveScriptRequest) returns (Response);
 }
 
 message ScriptsQuery {
@@ -20,8 +21,8 @@ message GetScriptsResponse {
 }
 
 // RunEventIn has multiple uses, the first event should contain the tag of the script
-// to run in the input.  Subsequent events can contain responses to requests for input
-// 
+// to run in the input.  Subsequent events should contain responses to requests for input
+// and finally it should end with an EOF.
 message RunEventIn {
     string input = 1;
     repeated EnvVar env = 2;
@@ -41,4 +42,14 @@ message RunEventOut {
 message EnvVar {
     string name = 1;
     string value = 2;
+}
+
+message SaveScriptRequest {
+    DocumentedScript script = 1;
+    bool overwrite = 2;
+}
+
+message Response {
+    bool success = 1;
+    string error = 2;
 }
