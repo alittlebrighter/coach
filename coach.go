@@ -8,6 +8,7 @@ package coach
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/rs/xid"
@@ -52,5 +53,5 @@ func HomeDir() string {
 		homeDir, _ := homedir.Dir()
 		home = homeDir + "/.coach"
 	}
-	return home
+	return strings.Replace(home, `\`, "/", -1)
 }
