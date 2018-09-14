@@ -1,9 +1,12 @@
 <template>
   <div>
     <h2 mdl-cell mdl-cell--12-col>Running {{ alias }}</h2><br>
-    <button @click="run();" class="mdl-button mdl-js-button mdl-button--raised mdl-color--light-green-200" id="start-button">
-      <span v-show="lines.length > 0">Re</span>Start
+    <div class="mdl-grid">
+    <button @click="run" class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-button--colored mdl-cell mdl-cell--1-col action">
+      <i v-show="lines.length == 0" class="fas fa-play"></i>
+      <i v-show="lines.length > 0" class="fas fa-redo-alt"></i>
     </button>
+    </div>
 
     <div v-show="lines.length > 0" class="run mdl-grid">
     <!--
@@ -18,9 +21,8 @@
     <div class="mdl-color--blue-grey-800 mdl-color-text--light-green-200 mdl-cell mdl-cell--10-col console">
       <div v-for="(line, key, i) in lines" :key="i" v-show="line.content !== EOF" v-html="line.content" :class="{red: line.error}"></div>
       <form v-show="lines.length > 0 && (!stdoutEOF || !stderrEOF)" onsubmit="return false;" class="mdl-cell mdl-cell--4-col">
-      <div id="stdin-form" class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
-        <input v-model="stdin" class="mdl-textfield__input" type="text" id="stdin-box">
-        <label class="mdl-textfield__label" for="stdin-box">Standard Input</label>
+      > <div id="stdin-form" class="mdl-textfield mdl-js-textfield">
+        <input v-model="stdin" v-on:keyup.enter="sendInput(stdin)" class="mdl-textfield__input" type="text" id="stdin-box">
       </div>
       <button @click="sendInput(stdin)" class="mdl-button mdl-js-button mdl-button--icon">
         <i class="far fa-sign-in"></i>
@@ -58,8 +60,8 @@ export default {
       this.stdoutEOF = false;
       this.stderrEOF = false;
       this.lines = []; 
+      this.stdin = "";
       this.requestId = ws.runScript(this.alias, this.parseResponse);
-      console.log("running script");
     },
     parseResponse (response, unsub) {
       console.log(JSON.stringify(response));
@@ -111,6 +113,10 @@ export default {
 
   .console > div {
     margin: .5em;
+  }
+
+  #stdin-box {
+    border-color: rgb(178,255,89);
   }
 </style>
 

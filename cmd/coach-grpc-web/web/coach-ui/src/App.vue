@@ -1,14 +1,15 @@
 <template>
-  <div id="app" class="mdl-layout mdl-js-layout mdl-layout--fixed-header">
+<div id="app" class="mdl-layout mdl-js-layout mdl-layout--fixed-header">
   <header class="mdl-layout__header">
     <div class="mdl-layout__header-row">
       <!-- Title -->
       <span class="mdl-layout-title">{{ title }}</span>
     </div>
     <!-- Tabs -->
-    <div class="mdl-layout__tab-bar mdl-js-ripple-effect">
+    <div class="mdl-layout__tab-bar mdl-js-ripple-effect" id="tab-bar">
       <router-link :class="{'mdl-layout__tab': true, 'is-active': $route.path == '/'}" to="/"><i class="far fa-search"></i>&nbsp;Scripts</router-link>
-      <router-link :class="{'mdl-layout__tab': true, 'is-active': $route.path.indexOf('/run') > -1 }" to="/run"><i class="far fa-play-circle"></i>&nbsp;Run</router-link>
+      <router-link v-show="$route.path.indexOf('/run') > -1" :class="{'mdl-layout__tab': true, 'is-active': $route.path.indexOf('/run') > -1 }" to="/run"><i class="far fa-play-circle"></i>&nbsp;Run</router-link>
+      <router-link v-show="$route.path === '/edit'" :class="{'mdl-layout__tab': true, 'is-active': $route.path.indexOf('/edit') > -1 }" to="/edit"><i class="far fa-edit"></i>&nbsp;Edit</router-link>
     </div>
   </header>
   <div class="mdl-layout__drawer">
@@ -39,5 +40,9 @@ export default {
 
 main {
   margin-left: 1em;
+}
+
+#tab-bar {
+  height: auto;
 }
 </style>

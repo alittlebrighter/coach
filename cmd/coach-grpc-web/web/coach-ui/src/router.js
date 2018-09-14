@@ -15,6 +15,11 @@ export default new Router({
       path: "/run/:alias",
       name: "run",
       component: () => import("@/views/Run.vue")
+    },
+    {
+      path: "/edit",
+      name: "edit",
+      component: () => import("@/views/Edit.vue")
     }
   ]
 });

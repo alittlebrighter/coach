@@ -11,9 +11,9 @@
   </div>
   <div class="mdl-card__actions mdl-card--border mdl-color--blue-grey-50">
     <router-link :to="'/run/' + script.alias" class="mdl-button mdl-js-button mdl-button--icon">
-        <i class="far fa-play-circle"></i>
+        <i class="fas fa-play"></i>
     </router-link>
-    <router-link :to="'/edit/' + script.alias" class="mdl-button mdl-js-button mdl-button--icon">
+    <router-link :to="{ name: 'edit', params: { script: script }}" class="mdl-button mdl-js-button mdl-button--icon">
       <i class="far fa-edit"></i>
     </router-link>
   </div>
@@ -30,7 +30,7 @@ export default {
 </script>
 
 <!-- Add "scoped" attribute to limit CSS to this component only -->
-<style scoped lang="scss">
+<style scoped lang="css">
 b.label {
   width: 14em;
   text-align: right;

@@ -2,8 +2,10 @@ package main
 
 import (
 	"context"
+	libJson "encoding/json"
 	"log"
 	"net/http"
+	"strings"
 	"sync"
 
 	"github.com/gorilla/websocket"
@@ -62,8 +64,7 @@ func (a *appContext) GetScripts(req *RPCCall, out chan *RPCCall) {
 	if len(req.Input) == 0 {
 		req.Input = []byte("?")
 	}
-
-	scripts, err := a.rpcClient.Scripts(context.Background(), &pb.ScriptsQuery{TagQuery: string(req.Input)})
+	scripts, err := a.rpcClient.Scripts(context.Background(), &pb.ScriptsQuery{TagQuery: BytesToString(req.Input)})
 	if err != nil {
 		req.Error = "rpc client: " + err.Error()
 		out <- req
@@ -77,19 +78,21 @@ func (a *appContext) GetScripts(req *RPCCall, out chan *RPCCall) {
 
 func (a *appContext) SaveScript(req *RPCCall, out chan *RPCCall) {
 	response := &(*req)
-	response.Input = nil
 
 	var script pb.DocumentedScript
+	log.Println(string(req.Input))
 	if err := json.Unmarshal(req.Input, &script); err != nil {
 		log.Println("savescript:", err)
 		response.Error = err.Error()
 	}
 
 	var err error
-	response.Output, err = a.rpcClient.SaveScript(context.Background(), &pb.SaveScriptRequest{Script: &script})
+	response.Output, err = a.rpcClient.SaveScript(context.Background(), &pb.SaveScriptRequest{Script: &script, Overwrite: true})
 	if err != nil {
 		response.Error = err.Error()
 	}
+
+	response.Input = nil
 
 	out <- response
 }
@@ -125,7 +128,7 @@ func (a *appContext) RunScript(req *RPCCall, in, out chan *RPCCall) {
 		log.Println("stopped receiving response stream")
 	}()
 
-	streams.Send(&pb.RunEventIn{Input: string(req.Input), ResponseSize: 256})
+	streams.Send(&pb.RunEventIn{Input: BytesToString(req.Input), ResponseSize: 256})
 
 	for !stdoutClosed || !stderrClosed {
 		select {
@@ -150,7 +153,7 @@ func (a *appContext) RunScript(req *RPCCall, in, out chan *RPCCall) {
 				log.Println("sent to WS:", response)
 			}
 		case input := <-in:
-			streams.Send(&pb.RunEventIn{Input: string(input.Input)})
+			streams.Send(&pb.RunEventIn{Input: BytesToString(input.Input)})
 			log.Println("sent input to RPC server:", input.Input)
 		}
 	}
@@ -211,9 +214,10 @@ func (a *appContext) rpc(w http.ResponseWriter, r *http.Request) {
 				if !exists {
 					continue
 				}
-				log.Println("received from WS:", req.Input)
+
 				input <- req
 			case "saveScript":
+				log.Println("received from WS:", string(req.Input))
 				go a.SaveScript(req, wsOut)
 			}
 		}
@@ -236,9 +240,13 @@ func (a *appContext) rpc(w http.ResponseWriter, r *http.Request) {
 }
 
 type RPCCall struct {
-	Id     string      `json:"id"`
-	Method string      `json:"method"`
-	Input  []byte      `json:"input"`
-	Output interface{} `json:"output"`
-	Error  string      `json:"error"`
+	Id     string             `json:"id"`
+	Method string             `json:"method"`
+	Input  libJson.RawMessage `json:"input"`
+	Output interface{}        `json:"output"`
+	Error  string             `json:"error"`
+}
+
+func BytesToString(data []byte) string {
+	return strings.Trim(string(data), `"`)
 }
