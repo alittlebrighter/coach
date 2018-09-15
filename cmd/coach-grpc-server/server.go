@@ -7,12 +7,13 @@ import (
 	"os"
 	"sync"
 
+	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
 
 	"github.com/alittlebrighter/coach-pro"
 	pb "github.com/alittlebrighter/coach-pro/gen/proto"
 	"github.com/alittlebrighter/coach-pro/grpc"
-	"github.com/spf13/cobra"
+	"github.com/alittlebrighter/coach-pro/trial"
 )
 
 func appMain(cmd *cobra.Command, args []string) {
@@ -23,6 +24,8 @@ func appMain(cmd *cobra.Command, args []string) {
 
 	rpcServer := grpc.NewServer()
 	pb.RegisterCoachRPCServer(rpcServer, svc)
+
+	log.Println(trial.ExpireNotice)
 
 	wg := sync.WaitGroup{}
 	wg.Add(1)
