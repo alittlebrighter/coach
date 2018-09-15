@@ -22,9 +22,10 @@ import (
 var json = jsoniter.ConfigCompatibleWithStandardLibrary
 
 func appMain(cmd *cobra.Command, args []string) {
-	webUri, _ := cmd.Flags().GetString("web-uri")
+	webUri, _ := cmd.Flags().GetString("host")
+	rpcUri, _ := cmd.Flags().GetString("rpc-host")
 
-	appCtx, err := NewAppContext()
+	appCtx, err := NewAppContext(rpcUri)
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -49,7 +50,8 @@ func main() {
 		Short: "Coach web UI.",
 		Run:   appMain,
 	}
-	rootCmd.Flags().String("web-uri", "localhost:26224", "Address to serve on.")
+	rootCmd.Flags().String("host", "localhost:26224", "Address to serve on.")
+	rootCmd.Flags().String("rpc-host", ":8326", "URI for the coach gRPC server.")
 
 	rootCmd.Execute()
 }
@@ -61,11 +63,11 @@ type appContext struct {
 	ActiveInputs map[string]chan *RPCCall
 }
 
-func NewAppContext() (*appContext, error) {
+func NewAppContext(rpcUri string) (*appContext, error) {
 	ctx := &appContext{ActiveInputs: map[string]chan *RPCCall{}}
 
 	var err error
-	ctx.rpcConn, err = grpc.Dial(":8326", grpc.WithInsecure())
+	ctx.rpcConn, err = grpc.Dial(rpcUri, grpc.WithInsecure())
 	if err != nil {
 		return nil, err
 	}
