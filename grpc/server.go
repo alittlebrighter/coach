@@ -20,9 +20,9 @@ type CoachRPC struct {
 	GetStore func(bool) *database.BoltDB
 }
 
-func (c *CoachRPC) Scripts(ctx context.Context, query *pb.ScriptsQuery) (*pb.GetScriptsResponse, error) {
+func (c *CoachRPC) QueryScripts(ctx context.Context, query *pb.ScriptsQuery) (*pb.GetScriptsResponse, error) {
 	store := c.GetStore(true)
-	scripts, err := coach.QueryScripts(query.TagQuery, store)
+	scripts, err := coach.QueryScripts(query.GetQuery(), store)
 	store.Close()
 
 	response := &pb.GetScriptsResponse{Scripts: []*pb.DocumentedScript{}}
@@ -31,6 +31,16 @@ func (c *CoachRPC) Scripts(ctx context.Context, query *pb.ScriptsQuery) (*pb.Get
 	}
 
 	return response, err
+}
+
+func (c *CoachRPC) GetScript(ctx context.Context, alias *pb.ScriptsQuery) (script *pb.DocumentedScript, err error) {
+	store := c.GetStore(true)
+	defer store.Close()
+	script = store.GetScript([]byte(alias.GetQuery()))
+	if script == nil {
+		err = database.ErrNotFound
+	}
+	return
 }
 
 func (c *CoachRPC) SaveScript(ctx context.Context, script *pb.SaveScriptRequest) (*pb.Response, error) {

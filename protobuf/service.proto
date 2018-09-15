@@ -7,13 +7,22 @@ option go_package = "proto";
 import "coach.proto";
 
 service CoachRPC {
-    rpc Scripts(ScriptsQuery) returns (GetScriptsResponse);
+    // query shoud be a comma delimited list of tags
+    rpc QueryScripts(ScriptsQuery) returns (GetScriptsResponse);
+
+    // query should be a script alias
+    rpc GetScript(ScriptsQuery) returns (DocumentedScript);
+
+    // the first RunEventIn event should contain the alias for the script
+    // you want to run, subsequent events are treated as stdin passed to 
+    // the script while running
     rpc RunScript(stream RunEventIn) returns (stream RunEventOut);
+
     rpc SaveScript(SaveScriptRequest) returns (Response);
 }
 
 message ScriptsQuery {
-    string tagQuery = 1;
+    string query = 1;
 }
 
 message GetScriptsResponse {
