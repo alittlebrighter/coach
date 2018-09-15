@@ -10,7 +10,7 @@ function init() {
     return;
   }
 
-  socket = new WebSocket("ws://" + window.location.hostname + (location.port ? ':'+location.port: '') + "/ws/rpc")
+  socket = new WebSocket("ws://" + window.location.hostname + (location.port ? ':'+location.port: '') + "/rpc")
 
   socket.onopen = () => {
     socketReady = true;

@@ -68,8 +68,6 @@ export default {
       this.requestId = ws.runScript(this.alias, this.parseResponse);
     },
     parseResponse (response, unsub) {
-      console.log(JSON.stringify(response));
-
       if (response["output"]) {
         this.lines.push({content: response.output.replace(/\\n/g, "<br>"), error: false});
         this.stdoutEOF = response.output === this.EOF;

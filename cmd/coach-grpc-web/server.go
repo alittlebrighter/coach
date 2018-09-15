@@ -8,9 +8,11 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/gobuffalo/packr"
 	"github.com/gorilla/websocket"
 	"github.com/json-iterator/go"
 	"github.com/rs/xid"
+	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
 
 	pb "github.com/alittlebrighter/coach-pro/gen/proto"
@@ -19,21 +21,37 @@ import (
 
 var json = jsoniter.ConfigCompatibleWithStandardLibrary
 
-func main() {
+func appMain(cmd *cobra.Command, args []string) {
+	webUri, _ := cmd.Flags().GetString("web-uri")
+
 	appCtx, err := NewAppContext()
 	if err != nil {
 		log.Fatalln(err)
 	}
 	defer appCtx.CloseRPC()
 
-	startWebsocketServer(appCtx)
+	startWebsocketServer(appCtx, webUri)
 }
 
-const webUri = "localhost:8327"
+func startWebsocketServer(appCtx *appContext, serveAt string) {
+	box := packr.NewBox("./web/coach-ui/dist")
 
-func startWebsocketServer(appCtx *appContext) {
+	http.Handle("/", http.FileServer(box))
 	http.HandleFunc("/rpc", appCtx.rpc)
-	log.Fatal(http.ListenAndServe(webUri, nil))
+
+	log.Println("serving coach-ui at " + serveAt)
+	log.Fatal(http.ListenAndServe(serveAt, nil))
+}
+
+func main() {
+	rootCmd := &cobra.Command{
+		Use:   "coach-grpc-web",
+		Short: "Coach web UI.",
+		Run:   appMain,
+	}
+	rootCmd.Flags().String("web-uri", "localhost:26224", "Address to serve on.")
+
+	rootCmd.Execute()
 }
 
 type appContext struct {
