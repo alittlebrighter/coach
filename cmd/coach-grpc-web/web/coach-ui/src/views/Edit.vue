@@ -12,15 +12,14 @@
         <div class="mdl-cell mdl-cell--10-col"></div>
 
         <label for="alias" class="mdl-cell mdl-cell--1-col">Alias</label>
-        <input v-model="script.alias" class="mdl-textfield__input mdl-cell mdl-cell--4-col" type="text" id="alias">
+        <input v-model="script.alias" class="mdl-textfield__input mdl-cell mdl-cell--2-col" type="text" id="alias">
+      
+        <label for="shell" class="mdl-cell mdl-cell--1-col">Shell</label>
+        <input v-model="script.script.shell" v-on:change="applyShell" class="mdl-textfield__input mdl-cell mdl-cell--1-col" type="text" id="shell">
         <div class="mdl-cell mdl-cell--7-col"></div>
       
         <label for="tags" class="mdl-cell mdl-cell--1-col">Tags</label>
         <input v-model="tagsString" class="mdl-textfield__input mdl-cell mdl-cell--4-col" type="text" id="tags" />
-        <div class="mdl-cell mdl-cell--7-col"></div>
-      
-        <label for="shell" class="mdl-cell mdl-cell--1-col">Shell</label>
-        <input v-model="script.script.shell" v-on:change="applyShell" class="mdl-textfield__input mdl-cell mdl-cell--4-col" type="text" id="shell">
         <div class="mdl-cell mdl-cell--7-col"></div>
       
         <label for="documentation" class="mdl-cell mdl-cell--1-col">Documentation</label>
@@ -48,12 +47,10 @@ import 'codemirror/mode/javascript/javascript.js';
 // theme css
 //import 'codemirror/theme/base16-light.css';
 
-import store from "@/store";
 import server from "@/server/websocket";
 import router from "@/router";
 
-const ws = server(),
-  storeKey = "edit-script";
+const ws = server();
 
 var empty = {
     alias: "new-script",
@@ -67,21 +64,8 @@ var empty = {
 
 export default {
   data () {
-    const cached = store.get(storeKey);
-
-    var script = null;
-    if (this.$route.params.script) {
-      script = this.$route.params.script
-    } else if (cached && cached !== "undefined") {
-      script = JSON.parse(cached);
-    } else {
-      script = empty;
-    }
-
-    store.set(storeKey, JSON.stringify(script));    
-
     var data = {
-      script: script,
+      script: empty,
       requestId: "",
       cmOptions: {
         lineNumbers: true,
@@ -98,16 +82,28 @@ export default {
 
     return data;
   },
+  created () {
+    this.fetch();
+  },
+  watch: {
+    '$route': 'fetch'
+  },
   methods: {
-    update () {
-      var query = store.get("tag-query");
-      this.tagQuery = query === "undefined" ? "" : query;
-      this.fetchScripts();
+    fetch () {
+      this.script.alias = this.$route.params.alias;
+      ws.getScript(this.script.alias, this.parseResponse);
+    },
+    parseResponse (response, unsub) {
+      this.script = response.output;
+      this.tagsString = this.tagsToString(this.script.tags);
+      unsub();
     },
     save () {
         this.script.tags = this.stringToTags(this.tagsString);
         ws.saveScript(this.script, true, function(response, unsub) {
-            console.log(JSON.stringify(response));
+            if (response.error) {
+                console.log(response.error);
+            }
         });
     },
     run () {

@@ -46,8 +46,24 @@ function fetchScripts(query, cb) {
 
   var payload = {
     id: uuid(),
-    method: "getScripts",
+    method: "queryScripts",
     input: query || TAG_WILDCARD
+  };
+  requests[payload.id] = cb;
+
+  socket.send(JSON.stringify(payload));
+}
+
+function getScript(alias, cb) {
+  if (!socketReady) {
+    todo.push(() => { getScript(alias, cb); });
+    return;
+  }
+
+  var payload = {
+    id: uuid(),
+    method: "getScript",
+    input: alias
   };
   requests[payload.id] = cb;
 
@@ -109,6 +125,7 @@ export default () => {
     TAG_WILDCARD,
     EOF,
     fetchScripts,
+    getScript,
     saveScript,
     runScript,
     sendInput

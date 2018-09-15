@@ -1,10 +1,13 @@
 <template>
   <div>
-    <h2 mdl-cell mdl-cell--12-col>Running {{ alias }}</h2><br>
+    <h2 mdl-cell mdl-cell--12-col>Running {{ alias }}</h2>
     <div class="mdl-grid">
     <button @click="run" class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-button--colored mdl-cell mdl-cell--1-col action">
       <i v-show="lines.length == 0" class="fas fa-play"></i>
       <i v-show="lines.length > 0" class="fas fa-redo-alt"></i>
+    </button>
+    <button @click="edit" class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-button--colored mdl-cell mdl-cell--1-col action">
+      <i class="far fa-edit"></i>
     </button>
     </div>
 
@@ -36,6 +39,7 @@
 
 <script>
 import server from "@/server/websocket";
+import router from "@/router";
 
 const ws = server();
 
@@ -83,6 +87,9 @@ export default {
     },
     sendInput (input) {
        ws.sendInput(this.requestId, input || this.stdin);
+    },
+    edit () {
+      router.push('/edit/' + this.alias);
     }
   }
 };

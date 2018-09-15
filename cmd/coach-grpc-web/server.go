@@ -60,11 +60,11 @@ func (a *appContext) CloseRPC() error {
 	return a.rpcConn.Close()
 }
 
-func (a *appContext) GetScripts(req *RPCCall, out chan *RPCCall) {
+func (a *appContext) QueryScripts(req *RPCCall, out chan *RPCCall) {
 	if len(req.Input) == 0 {
 		req.Input = []byte("?")
 	}
-	scripts, err := a.rpcClient.Scripts(context.Background(), &pb.ScriptsQuery{TagQuery: BytesToString(req.Input)})
+	scripts, err := a.rpcClient.QueryScripts(context.Background(), &pb.ScriptsQuery{Query: BytesToString(req.Input)})
 	if err != nil {
 		req.Error = "rpc client: " + err.Error()
 		out <- req
@@ -72,6 +72,19 @@ func (a *appContext) GetScripts(req *RPCCall, out chan *RPCCall) {
 	}
 
 	req.Output = scripts
+	out <- req
+	return
+}
+
+func (a *appContext) GetScript(req *RPCCall, out chan *RPCCall) {
+	script, err := a.rpcClient.GetScript(context.Background(), &pb.ScriptsQuery{Query: BytesToString(req.Input)})
+	if err != nil {
+		req.Error = "rpc client: " + err.Error()
+		out <- req
+		return
+	}
+
+	req.Output = script
 	out <- req
 	return
 }
@@ -207,8 +220,10 @@ func (a *appContext) rpc(w http.ResponseWriter, r *http.Request) {
 			}
 
 			switch req.Method {
-			case "getScripts":
-				go a.GetScripts(req, wsOut)
+			case "queryScripts":
+				go a.QueryScripts(req, wsOut)
+			case "getScript":
+				go a.GetScript(req, wsOut)
 			case "runScript":
 				input, exists := a.ActiveInputs[req.Id]
 				if !exists {

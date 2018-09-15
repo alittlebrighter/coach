@@ -7,9 +7,15 @@
     </div>
     <!-- Tabs -->
     <div class="mdl-layout__tab-bar mdl-js-ripple-effect" id="tab-bar">
-      <router-link :class="{'mdl-layout__tab': true, 'is-active': $route.path == '/'}" to="/"><i class="far fa-search"></i>&nbsp;Scripts</router-link>
-      <router-link v-show="$route.path.indexOf('/run') > -1" :class="{'mdl-layout__tab': true, 'is-active': $route.path.indexOf('/run') > -1 }" to="/run"><i class="far fa-play-circle"></i>&nbsp;Run</router-link>
-      <router-link v-show="$route.path === '/edit'" :class="{'mdl-layout__tab': true, 'is-active': $route.path.indexOf('/edit') > -1 }" to="/edit"><i class="far fa-edit"></i>&nbsp;Edit</router-link>
+      <router-link :class="{'mdl-layout__tab': true, 'is-active': $route.path == '/'}" to="/"><i class="far fa-search">
+        </i>&nbsp;Scripts
+      </router-link>
+      <router-link v-show="$route.path.indexOf('/run') > -1" :class="{'mdl-layout__tab': true, 'is-active': $route.path.indexOf('/run') > -1 }" to="/run">
+        <i class="fas fa-play"></i>&nbsp;Run
+      </router-link>
+      <router-link v-show="$route.path.indexOf('/edit') > -1" :class="{'mdl-layout__tab': true, 'is-active': $route.path.indexOf('/edit') > -1 }" to="/edit">
+        <i class="far fa-edit"></i>&nbsp;Edit
+      </router-link>
     </div>
   </header>
   <div class="mdl-layout__drawer">
