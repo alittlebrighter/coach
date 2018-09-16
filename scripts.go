@@ -15,6 +15,7 @@ import (
 
 	"github.com/golang/protobuf/ptypes"
 	"github.com/rs/xid"
+	"github.com/spf13/viper"
 
 	models "github.com/alittlebrighter/coach-pro/gen/proto"
 	"github.com/alittlebrighter/coach-pro/platforms"
@@ -84,7 +85,7 @@ func EditScript(alias string, store ScriptStore) (*models.DocumentedScript, erro
 			Id:     []byte(alias),
 			Alias:  alias,
 			Tags:   strings.Split(alias, "."),
-			Script: &models.Script{Shell: platforms.IdentifyShell()},
+			Script: &models.Script{Shell: viper.GetString("default_shell")},
 		}
 	}
 

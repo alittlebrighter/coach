@@ -9,6 +9,7 @@ import (
 	"os"
 
 	coach "github.com/alittlebrighter/coach-pro"
+	"github.com/alittlebrighter/coach-pro/platforms"
 	"github.com/alittlebrighter/coach-pro/storage/database"
 	"github.com/alittlebrighter/coach-pro/trial"
 	"github.com/spf13/cobra"
@@ -84,12 +85,19 @@ func main() {
 	}
 	runCmd.Flags().BoolP("check", "c", false, "Review the command documentation before running.")
 
+	configCmd := &cobra.Command{
+		Use:   "config",
+		Short: "Set default config values.",
+		Run:   config,
+	}
+
 	rootCmd.AddCommand(
 		//	sessionCmd,
 		historyCmd,
 		docCmd,
 		ignoreCmd,
 		runCmd,
+		configCmd,
 	)
 
 	cobra.OnInitialize(initConfig)
@@ -117,11 +125,12 @@ func initConfig() {
 	}
 
 	viper.SetTypeByDefaultValue(true)
-	viper.SetDefault("history.maxlines", 1000)
-	viper.SetDefault("history.reps-pre-doc-prompt", 3)
-	viper.SetDefault("timestampFormat", "01/02 03:04:05PM")
+	viper.SetDefault("default_shell", platforms.DefaultShell)
+	viper.SetDefault("history.max_lines", 1000)
+	viper.SetDefault("history.reps_pre_doc_prompt", 3)
+	viper.SetDefault("timestamp_format", "01/02 03:04:05PM")
 
-	viper.AddConfigPath(home + "/.coach")
+	viper.AddConfigPath(home)
 	viper.SetConfigName("config")
 
 	viper.SetEnvPrefix("coach")

@@ -6,6 +6,7 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"strconv"
@@ -13,13 +14,13 @@ import (
 	"sync"
 
 	"github.com/rs/xid"
+	yaml "gopkg.in/yaml.v2"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
 	"github.com/alittlebrighter/coach-pro"
 	models "github.com/alittlebrighter/coach-pro/gen/proto"
-	"github.com/alittlebrighter/coach-pro/platforms"
 	"github.com/alittlebrighter/coach-pro/storage/database"
 )
 
@@ -38,7 +39,7 @@ func history(cmd *cobra.Command, args []string) {
 
 	switch {
 	case rErr == nil && len(record) > 0:
-		dupeCount := viper.GetInt("history.reps-pre-doc-prompt")
+		dupeCount := viper.GetInt("history.reps_pre_doc_prompt")
 
 		store := coach.GetStore(false)
 
@@ -92,7 +93,7 @@ func history(cmd *cobra.Command, args []string) {
 				continue
 			}
 			if all {
-				fmt.Printf("%s %s@%s - %s\n", id.Time().Format(viper.GetString("timestampFormat")), line.User, line.GetTty(),
+				fmt.Printf("%s %s@%s - %s\n", id.Time().Format(viper.GetString("timestamp_format")), line.User, line.GetTty(),
 					line.GetFullCommand())
 			} else {
 				fmt.Printf("%s - %s\n", id.Time().Format(viper.GetString("timestampFormat")),
@@ -123,16 +124,11 @@ func doc(cmd *cobra.Command, args []string) {
 			}
 		}
 
-		shell := platforms.IdentifyShell()
-		if len(shell) == 0 {
-			fmt.Println("Your shell could not be identified.  Using 'bash' for now.\nRun `coach lib -e " + args[0] + "` to edit.")
-			shell = "bash"
-		}
 		err := coach.SaveScript(models.DocumentedScript{
 			Alias:         args[0],
 			Tags:          strings.Split(args[1], ","),
 			Documentation: strings.Join(args[2:], " "),
-			Script:        &models.Script{Content: script, Shell: shell}},
+			Script:        &models.Script{Content: script, Shell: viper.GetString("default_shell")}},
 			false, store)
 		if err != nil {
 			handleErr(err)
@@ -346,6 +342,19 @@ func run(cmd *cobra.Command, args []string) {
 
 	if err := coach.RunScript(*toRun, scriptArgs, configureIO); err != nil {
 		handleErr(err)
+	}
+}
+
+func config(cmd *cobra.Command, args []string) {
+	for _, arg := range args {
+		keyAndValue := strings.Split(arg, "=")
+
+		if len(keyAndValue) >= 2 {
+			viper.Set(keyAndValue[0], keyAndValue[1])
+		}
+		defaults := viper.AllSettings()
+		data, _ := yaml.Marshal(&defaults)
+		ioutil.WriteFile(home+"/config.yaml", data, database.FilePerms)
 	}
 }
 

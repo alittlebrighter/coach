@@ -30,7 +30,7 @@ func ImportHistory(store HistoryStore) error {
 		User:      user.Username,
 	}
 
-	lines, err := platforms.NativeHistory(viper.GetInt("history.maxlines"))
+	lines, err := platforms.NativeHistory(viper.GetInt("history.max_lines"))
 	if err != nil {
 		return err
 	}
@@ -117,7 +117,7 @@ func SaveHistory(line string, dupeCount int, store HistoryStore) (promptDoc bool
 		}
 	}
 
-	store.PruneHistory(viper.GetInt("history.maxlines"))
+	store.PruneHistory(viper.GetInt("history.max_lines"))
 	return
 }
 
