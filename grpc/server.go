@@ -210,11 +210,11 @@ parseLoop:
 
 		switch {
 		case err == nil:
-			for _, line := range processOutput(buffer[:readCount-1]) {
+			for _, line := range processOutput(buffer[:readCount]) {
 				output <- line
 			}
 		case err == io.EOF && readCount > 0:
-			for _, line := range processOutput(buffer[:readCount-1]) {
+			for _, line := range processOutput(buffer[:readCount]) {
 				output <- line
 			}
 			fallthrough
