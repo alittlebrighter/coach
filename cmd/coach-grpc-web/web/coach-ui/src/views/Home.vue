@@ -20,12 +20,17 @@
     <div class="mdl-grid">
       <script-summary v-for="script in scripts" :key="script.id" :script="script" class="mdl-cell mdl-cell--4-col" />
     </div>
+
+    <button @click="addScript" class="mdl-button mdl-js-button mdl-button--fab mdl-js-ripple-effect mdl-button--colored fab">
+      <i class="fas fa-plus"></i>
+    </button>
   </div>
 </template>
 
 <script>
 import store from "@/store";
 import server from "@/server/websocket";
+import router from "@/router";
 import ScriptSummary from "@/components/ScriptSummary.vue";
 
 const ws = server();
@@ -47,7 +52,7 @@ export default {
   methods: {
     update () {
       var query = store.get("tag-query");
-      this.tagQuery = query === "undefined" ? "" : query;
+      this.tagQuery = !query || query === "undefined" || query === "null" ? "" : query;
       this.fetchScripts();
     },
     fetchScripts() {
@@ -57,6 +62,9 @@ export default {
     parseResponse (response, unsub) {
       this.scripts = response.output.scripts;
       unsub();
+    },
+    addScript () {
+      router.push("/edit/new-script-" + (new Date()).getTime());
     }
   },
   components: {
@@ -64,3 +72,12 @@ export default {
   }
 };
 </script>
+
+<style>
+.fab {
+  position: absolute;
+  right: 3em;
+  bottom: 3em;
+  z-index: 100;
+}
+</style>

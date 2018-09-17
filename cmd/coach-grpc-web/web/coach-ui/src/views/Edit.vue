@@ -3,7 +3,17 @@
     <h2 class="inline">Editing {{ script.alias }}</h2>
 
     <form class="mdl-grid" onsubmit="return false;">
-        <button @click="save" class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-button--colored mdl-cell mdl-cell--1-col action">
+        <button @click="save" :class="{
+            'mdl-button': true,
+            'mdl-js-button': true,
+            'mdl-button--raised': true,
+            'mdl-js-ripple-effect': true,
+            'mdl-button--colored': true,
+            'mdl-cell': true,
+            'mdl-cell--1-col': true,
+            success: saveResult.isSuccess, 
+            fail: saveResult.isFail
+            }" >
           <i class="fas fa-save"></i>
         </button>
         <button @click="run" class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-button--colored mdl-cell mdl-cell--1-col action">
@@ -27,7 +37,7 @@
         <div class="mdl-cell mdl-cell--7-col"></div>
       
       <label for="script-content" class="mdl-cell mdl-cell--1-col">Script</label>
-      <codemirror v-model="script.script.content" :options="cmOptions" id="script-content" class="mdl-cell mdl-cell--10-col"></codemirror>
+      <codemirror v-model="script.script.content" :options="cmOptions" id="script-content" :style="{height:editorHeight}" class="mdl-cell mdl-cell--10-col"></codemirror>
     </form>
   </div>
 </template>
@@ -67,6 +77,7 @@ export default {
     var data = {
       script: empty,
       requestId: "",
+      saveResult: {isSuccess: false, isFail: false},
       cmOptions: {
         lineNumbers: true,
         line: true,
@@ -88,23 +99,42 @@ export default {
   watch: {
     '$route': 'fetch'
   },
+  computed: {
+    editorHeight() {
+        return 400 + "px";
+    }
+  },
   methods: {
     fetch () {
       this.script.alias = this.$route.params.alias;
       ws.getScript(this.script.alias, this.parseResponse);
     },
     parseResponse (response, unsub) {
-      this.script = response.output;
-      this.tagsString = this.tagsToString(this.script.tags);
+      if (response.output) {
+        this.script = response.output;
+        this.tagsString = this.tagsToString(this.script.tags);
+      }
       unsub();
     },
     save () {
         this.script.tags = this.stringToTags(this.tagsString);
-        ws.saveScript(this.script, true, function(response, unsub) {
-            if (response.error) {
-                console.log(response.error);
-            }
-        });
+        ws.saveScript(this.script, true, this.saveResponse);
+    },
+    saveResponse (response, unsub) {
+        console.log(JSON.stringify(response));
+
+        if (response.error || !response.output.success) {
+            this.saveResult.isFail = true;
+        } else {
+            this.saveResult.isSuccess = true;
+        }
+
+        setTimeout(this.resetSave, 1000);
+
+        unsub();
+    },
+    resetSave () {
+        this.saveResult = {isSuccess: false, isFail: false};
     },
     run () {
         this.save();
@@ -164,5 +194,13 @@ label {
 
 label:after {
     content: ":";
+}
+
+.success {
+    background-color: green !important;
+}
+
+.fail {
+    background-color: red !important;
 }
 </style>
