@@ -5,6 +5,7 @@ package main
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -340,9 +341,18 @@ func run(cmd *cobra.Command, args []string) {
 		}
 	}
 
-	if err := coach.RunScript(*toRun, scriptArgs, configureIO); err != nil {
-		handleErr(err)
+	ctx := context.Background()
+	var cancel context.CancelFunc
+	timeout, _ := cmd.Flags().GetDuration("timeout")
+	if timeout > 0 {
+		ctx, cancel = context.WithTimeout(ctx, timeout)
+		defer cancel()
 	}
+
+	err := coach.RunScript(ctx, *toRun, scriptArgs, configureIO)
+	handleErrExit(err, true)
+
+	return
 }
 
 func config(cmd *cobra.Command, args []string) {
@@ -364,7 +374,7 @@ func handleErr(e error) {
 
 func handleErrExit(e error, shouldExit bool) {
 	if e != nil {
-		fmt.Println("ERROR:", e)
+		fmt.Println("\nERROR:", e)
 
 		if shouldExit {
 			os.Exit(1)

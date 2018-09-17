@@ -195,12 +195,4 @@ label {
 label:after {
     content: ":";
 }
-
-.success {
-    background-color: green !important;
-}
-
-.fail {
-    background-color: red !important;
-}
 </style>

@@ -34,6 +34,10 @@
     </div>
     
     </div>
+
+    <button @click="sendInput('coach::cancelRun')" v-show="isRunning" class="mdl-button mdl-js-button mdl-button--fab mdl-js-ripple-effect mdl-button--colored fab fail">
+      <i class="fas fa-times"></i>
+    </button>
   </div>
 </template>
 
@@ -85,6 +89,7 @@ export default {
     },
     sendInput (input) {
        ws.sendInput(this.requestId, input || this.stdin);
+       this.stdin = "";
     },
     edit () {
       router.push('/edit/' + this.alias);

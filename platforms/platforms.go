@@ -1,6 +1,7 @@
 package platforms
 
 import (
+	"context"
 	"errors"
 	"io/ioutil"
 	"os"
@@ -9,7 +10,7 @@ import (
 )
 
 type Shell interface {
-	BuildCommand(script string, args []string) (*exec.Cmd, func(), error)
+	BuildCommand(ctx context.Context, script string, args []string) (*exec.Cmd, func(), error)
 	FileExtension() string
 	LineComment() string
 }
@@ -96,21 +97,21 @@ func WriteTmpFile(script string) (string, func(), error) {
 	return tmpfile.Name(), cleanup, nil
 }
 
-func BuildCommand(interpreter, script string, args []string) (*exec.Cmd, func(), error) {
+func BuildCommand(ctx context.Context, interpreter, script string, args []string) (*exec.Cmd, func(), error) {
 	filename, cleanup, err := WriteTmpFile(script)
 	if err != nil {
 		return nil, nil, err
 	}
 	cmdArgs := append([]string{filename}, args...)
-	return exec.Command(interpreter, cmdArgs...), cleanup, nil
+	return exec.CommandContext(ctx, interpreter, cmdArgs...), cleanup, nil
 }
 
 type AnyShell struct {
 	Name string
 }
 
-func (a *AnyShell) BuildCommand(script string, args []string) (*exec.Cmd, func(), error) {
-	return BuildCommand(a.Name, script, args)
+func (a *AnyShell) BuildCommand(ctx context.Context, script string, args []string) (*exec.Cmd, func(), error) {
+	return BuildCommand(ctx, a.Name, script, args)
 }
 
 func (a *AnyShell) LineComment() string {

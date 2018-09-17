@@ -113,7 +113,6 @@ func (a *appContext) SaveScript(req *RPCCall, out chan *RPCCall) {
 	response := &(*req)
 
 	var script pb.DocumentedScript
-	log.Println(string(req.Input))
 	if err := json.Unmarshal(req.Input, &script); err != nil {
 		log.Println("savescript:", err)
 		response.Error = err.Error()
@@ -252,7 +251,6 @@ func (a *appContext) rpc(w http.ResponseWriter, r *http.Request) {
 
 				input <- req
 			case "saveScript":
-				log.Println("received from WS:", string(req.Input))
 				go a.SaveScript(req, wsOut)
 			}
 		}

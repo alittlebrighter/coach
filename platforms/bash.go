@@ -5,6 +5,7 @@ package platforms
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"os/exec"
 	"strconv"
@@ -65,9 +66,9 @@ func (b *Bash) History(lineCount int) <-chan string {
 	return lines
 }
 
-func (b *Bash) BuildCommand(script string, args []string) (*exec.Cmd, func(), error) {
+func (b *Bash) BuildCommand(ctx context.Context, script string, args []string) (*exec.Cmd, func(), error) {
 	cmdArgs := append([]string{"-c", "( " + script + " )" /* HACK */, "''" /* END HACK */}, args...)
-	return exec.Command("bash", cmdArgs...), nil, nil
+	return exec.CommandContext(ctx, "bash", cmdArgs...), nil, nil
 }
 
 func (b *Bash) FileExtension() string {

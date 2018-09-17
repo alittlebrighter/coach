@@ -4,6 +4,7 @@
 package coach
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -136,10 +137,10 @@ func EditScript(alias string, store ScriptStore) (*models.DocumentedScript, erro
 	return &newScript, nil
 }
 
-func RunScript(script models.DocumentedScript, args []string, configureIO func(*exec.Cmd) error) error {
+func RunScript(ctx context.Context, script models.DocumentedScript, args []string, configureIO func(*exec.Cmd) error) error {
 	shell := platforms.GetShell(script.GetScript().GetShell())
 
-	toRun, cleanup, err := shell.BuildCommand(script.GetScript().GetContent(), args)
+	toRun, cleanup, err := shell.BuildCommand(ctx, script.GetScript().GetContent(), args)
 	if cleanup != nil {
 		defer cleanup()
 	}
@@ -149,7 +150,26 @@ func RunScript(script models.DocumentedScript, args []string, configureIO func(*
 	if err := configureIO(toRun); err != nil {
 		return err
 	}
-	toRun.Run()
+
+	err = toRun.Start()
+	if err != nil {
+		return err
+	}
+
+	result := make(chan error, 1)
+	go func() {
+		result <- toRun.Wait()
+	}()
+	select {
+	case err := <-result:
+		return err
+	case <-ctx.Done():
+		err := ctx.Err()
+		if ctx.Err() != nil {
+			platforms.KillProcess(toRun)
+		}
+		return err
+	}
 
 	return nil
 }

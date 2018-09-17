@@ -84,6 +84,7 @@ func main() {
 		Run:   run,
 	}
 	runCmd.Flags().BoolP("check", "c", false, "Review the command documentation before running.")
+	runCmd.Flags().DurationP("timeout", "t", 0, "Specify a maximum time this script should run.")
 
 	configCmd := &cobra.Command{
 		Use:   "config",

@@ -51,4 +51,19 @@ main {
 #tab-bar {
   height: auto;
 }
+
+.fab {
+  position: absolute;
+  right: 3em;
+  bottom: 3em;
+  z-index: 100;
+}
+
+.success {
+    background-color: green !important;
+}
+
+.fail {
+    background-color: red !important;
+}
 </style>

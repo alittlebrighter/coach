@@ -14,7 +14,10 @@ import (
 	"github.com/alittlebrighter/coach-pro/storage/database"
 )
 
-const EOF = "!!!EOF!!!"
+const (
+	EOF           = "!!!EOF!!!"
+	CancelCommand = "coach::cancelRun"
+)
 
 type CoachRPC struct {
 	GetStore func(bool) *database.BoltDB
@@ -93,8 +96,9 @@ func (c *CoachRPC) RunScript(streams pb.CoachRPC_RunScriptServer) error {
 
 	// run the script
 	runErr := make(chan error)
+	ctx, cancelRun := context.WithCancel(context.Background())
 	go func() {
-		runErr <- coach.RunScript(*toRun, args, c.configureCmdIO(IOStreams, wg))
+		runErr <- coach.RunScript(ctx, *toRun, args, c.configureCmdIO(IOStreams, wg))
 	}()
 
 	// wait for stdin/out/err to be initialized
@@ -159,8 +163,11 @@ func (c *CoachRPC) RunScript(streams pb.CoachRPC_RunScriptServer) error {
 	}()
 	go func() {
 		for in := range input {
+			if in == CancelCommand {
+				cancelRun()
+				return
+			}
 			IOStreams.Stdin.Write([]byte(strings.TrimSpace(in) + platforms.Newline(1)))
-			log.Println("sent StdIn:", in)
 		}
 		log.Println("closed stdin stream")
 	}()

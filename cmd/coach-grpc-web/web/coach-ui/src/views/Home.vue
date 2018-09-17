@@ -72,12 +72,3 @@ export default {
   }
 };
 </script>
-
-<style>
-.fab {
-  position: absolute;
-  right: 3em;
-  bottom: 3em;
-  z-index: 100;
-}
-</style>
