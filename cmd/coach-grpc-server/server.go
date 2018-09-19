@@ -17,8 +17,8 @@ import (
 )
 
 func appMain(cmd *cobra.Command, args []string) {
-	rpcUri, _ := cmd.Flags().GetString("rpc-uri")
-	webUri, _ := cmd.Flags().GetString("web-rpc-uri")
+	rpcUri, _ := cmd.Flags().GetString("host")
+	webUri, _ := cmd.Flags().GetString("web-host")
 
 	svc := &coachrpc.CoachRPC{GetStore: coach.GetStore}
 
@@ -70,11 +70,11 @@ func main() {
 
 	rootCmd := &cobra.Command{
 		Use:   "coach-grpc-server",
-		Short: "Coach script library functions available over a GRPC interface.",
+		Short: "Coach script library functions available over a gRPC interface.",
 		Run:   appMain,
 	}
-	rootCmd.Flags().String("rpc-uri", "localhost:8326", "URI to host GRPC server.")
-	rootCmd.Flags().String("web-rpc-uri", "", "URI to host the RPC web server. "+
+	rootCmd.Flags().String("host", "localhost:8326", "URL to host GRPC server.")
+	rootCmd.Flags().String("web-host", "", "URL to host the gRPC web server.  "+
 		"Web server will not start if this value is blank.")
 
 	rootCmd.Execute()
