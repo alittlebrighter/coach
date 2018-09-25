@@ -26,6 +26,12 @@
   revision = "4da3e2cfbabc9f751898f250b49f2439785783a1"
 
 [[projects]]
+  name = "github.com/gobuffalo/packr"
+  packages = ["."]
+  revision = "5a2cbb54c4e7d482e3f518c56f1f86f133d5204f"
+  version = "v1.13.7"
+
+[[projects]]
   branch = "master"
   name = "github.com/golang/protobuf"
   packages = ["proto","ptypes","ptypes/any","ptypes/duration","ptypes/timestamp"]
@@ -54,12 +60,6 @@
   name = "github.com/json-iterator/go"
   packages = ["."]
   revision = "10a568c51178f31e41456cedaac7838e0f4f7360"
-
-[[projects]]
-  name = "github.com/kr/pty"
-  packages = ["."]
-  revision = "fa756f09eeb418bf1cc6268c66ceaad9bb98f598"
-  version = "v1.1.2"
 
 [[projects]]
   branch = "master"
@@ -102,6 +102,12 @@
   name = "github.com/pelletier/go-toml"
   packages = ["."]
   revision = "22139eb5469018e7374b3e7ef653de37ffb44f72"
+
+[[projects]]
+  name = "github.com/pkg/errors"
+  packages = ["."]
+  revision = "645ef00459ed84a119197bfb8d8205042c6df63d"
+  version = "v0.8.0"
 
 [[projects]]
   name = "github.com/pmezard/go-difflib"
@@ -196,6 +202,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "85e68cd63357699478966479d24d375fbdfe15422e5a6389aa3736ea3b0ede21"
+  inputs-digest = "d97d7da69984d7b9f6c20fa51e65851de2164b2b986cdfe8767023169458ee42"
   solver-name = "gps-cdcl"
   solver-version = 1
