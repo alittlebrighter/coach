@@ -75,8 +75,8 @@ func (p *PowerShell) BuildCommand(ctx context.Context, script string, args []str
 		cleanup()
 		return nil, nil, err
 	}
-
-	cmdArgs := append([]string{tmpfile.Name()}, args...)
+	cmdArgs := append([]string{"-NoProfile", "-ExecutionPolicy", "Bypass", "-OutputFormat", "Text",
+		"-File", tmpfile.Name()}, args...)
 	return exec.CommandContext(ctx, "PowerShell.exe", cmdArgs...), cleanup, nil
 }
 
