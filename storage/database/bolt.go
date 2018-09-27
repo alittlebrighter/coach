@@ -162,32 +162,39 @@ func (b *BoltDB) QueryScripts(tags ...string) ([]models.DocumentedScript, error)
 
 		for k, v := c.First(); k != nil; k, v = c.Next() {
 			var savedCmd models.DocumentedScript
+			shouldAdd := false
 			if all && len(k) > 0 {
-				err := json.Unmarshal(v, &savedCmd)
-				if err == nil {
-					cmds = append(cmds, savedCmd)
-				}
-				continue
+				shouldAdd = true
+				goto add
 			}
 
-			// this is an ugly abuse of scoping rules
-			skip := false
-			jsonparser.ArrayEach(v, func(value []byte, dataType jsonparser.ValueType, offset int, err error) {
-				if skip {
-					return
+			for _, tag := range tags {
+				tag = strings.ToLower(tag)
+
+				if tag[0] == '~' && len(tag) > 1 && strings.Contains(strings.ToLower(string(k)), tag[1:]) ||
+					strings.ToLower(string(k)) == tag {
+					shouldAdd = true
+					goto add
 				}
-				// simple for now, just add command to the list if any tags match
-				for _, tag := range tags {
-					if tag == string(value) {
-						err = json.Unmarshal(v, &savedCmd)
-						if err != nil {
-							skip = true
-							break
-						}
-						cmds = append(cmds, savedCmd)
+
+				jsonparser.ArrayEach(v, func(scriptTag []byte, dataType jsonparser.ValueType, offset int, err error) {
+					switch {
+					case shouldAdd || err != nil:
+						return
+					case tag[0] == '~' && len(tag) > 1 && strings.Contains(strings.ToLower(string(scriptTag)), tag[1:]):
+						fallthrough
+					case strings.ToLower(string(scriptTag)) == tag:
+						shouldAdd = true
 					}
+				}, "tags")
+			}
+
+		add:
+			if shouldAdd {
+				if err := json.Unmarshal(v, &savedCmd); err == nil {
+					cmds = append(cmds, savedCmd)
 				}
-			}, "tags")
+			}
 		}
 
 		return nil
