@@ -1,6 +1,6 @@
 syntax="proto3";
 
-package coach;
+package io.alittlebrighter.coach;
 
 option go_package = "proto";
 
