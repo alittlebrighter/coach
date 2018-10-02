@@ -37,7 +37,7 @@
         <div class="mdl-cell mdl-cell--7-col"></div>
       
       <label for="script-content" class="mdl-cell mdl-cell--1-col">Script</label>
-      <codemirror v-model="script.script.content" :options="cmOptions" id="script-content" :style="{height:editorHeight}" class="mdl-cell mdl-cell--10-col"></codemirror>
+      <codemirror v-model="script.script.content" :options="cmOptions" id="script-content" class="mdl-cell mdl-cell--10-col tall"></codemirror>
     </form>
   </div>
 </template>
@@ -81,7 +81,8 @@ export default {
       cmOptions: {
         lineNumbers: true,
         line: true,
-        styleActiveLine: true
+        styleActiveLine: true,
+        viewportMargin: Infinity
       }
     };
 
@@ -101,7 +102,7 @@ export default {
   },
   computed: {
     editorHeight() {
-        return 400 + "px";
+        return 600 + "px";
     }
   },
   methods: {
@@ -194,5 +195,9 @@ label {
 
 label:after {
     content: ":";
+}
+
+.CodeMirror {
+  height: 500px;
 }
 </style>

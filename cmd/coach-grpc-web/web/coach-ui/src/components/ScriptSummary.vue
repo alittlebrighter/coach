@@ -14,7 +14,7 @@
         <i class="fas fa-play"></i>
     </router-link>
     <router-link :to="'/edit/' + script.alias" class="mdl-button mdl-js-button mdl-button--icon">
-      <i class="far fa-edit"></i>
+      <i class="fas fa-edit"></i>
     </router-link>
   </div>
 </div>

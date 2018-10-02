@@ -1,13 +1,20 @@
 <template>
   <div>
-    <h2 mdl-cell mdl-cell--12-col>Running {{ alias }}</h2>
+    <h2>Running {{ alias }}</h2>
     <div class="mdl-grid">
+      <form class="mdl-cell mdl-cell--4-col">
+        <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
+        <input v-model="args" class="mdl-textfield__input" type="text" id="args">
+        <label class="mdl-textfield__label" for="args">command line arguments...</label>
+        </div>
+      </form>
+      <div class="mdl-cell mdl-cell--8-col"></div>
     <button @click="run" class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-button--colored mdl-cell mdl-cell--1-col action">
       <i v-show="lines.length == 0" class="fas fa-play"></i>
       <i v-show="lines.length > 0" class="fas fa-redo-alt"></i>
     </button>
     <button @click="edit" class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-button--colored mdl-cell mdl-cell--1-col action">
-      <i class="far fa-edit"></i>
+      <i class="fas fa-edit"></i>
     </button>
     </div>
 
@@ -48,12 +55,13 @@ import router from "@/router";
 const ws = server();
 
 export default {
-  data () {
+  data() {
     var alias = this.$route.params.alias || "No script selected.";
 
     return {
       EOF: "!!!EOF!!!",
       alias: alias,
+      args: "",
       stdin: "",
       isRunning: false,
       lines: [],
@@ -63,70 +71,81 @@ export default {
     };
   },
   methods: {
-    run () {
+    run() {
       this.isRunning = true;
       this.stdoutEOF = false;
       this.stderrEOF = false;
-      this.lines = []; 
+      this.lines = [];
       this.stdin = "";
-      this.requestId = ws.runScript(this.alias, this.parseResponse);
+      this.requestId = ws.runScript(
+        this.alias + " " + this.args,
+        this.parseResponse
+      );
+      this.lines.push({ content: "--- Running ---", error: false });
     },
-    parseResponse (response, unsub) {
+    parseResponse(response, unsub) {
       if (response["output"]) {
-        this.lines.push({content: response.output.replace(/\\n/g, "<br>"), error: false});
+        this.lines.push({
+          content: response.output.replace(/\\n/g, "<br>"),
+          error: false
+        });
         this.stdoutEOF = response.output === this.EOF;
       }
 
       if (response["error"]) {
-        this.lines.push({content: response.error.replace(/\\n/g, "<br>"), error: true});
+        this.lines.push({
+          content: response.error.replace(/\\n/g, "<br>"),
+          error: true
+        });
         this.stderrEOF = response.error === this.EOF;
       }
 
       if (this.stdoutEOF && this.stderrEOF) {
+        this.lines.push({ content: "--- Stopped ---", error: false });
         this.isRunning = false;
         unsub();
       }
     },
-    sendInput (input) {
-       ws.sendInput(this.requestId, input || this.stdin);
-       this.stdin = "";
+    sendInput(input) {
+      ws.sendInput(this.requestId, input || this.stdin);
+      this.stdin = "";
     },
-    edit () {
-      router.push('/edit/' + this.alias);
+    edit() {
+      router.push("/edit/" + this.alias);
     }
   }
 };
 </script>
 
 <style scoped>
-  .red {
-    color: #ff4c4c;
-  }
+.red {
+  color: #ff4c4c;
+}
 
-  form {
-    vertical-align: bottom;
-  }
+form {
+  vertical-align: bottom;
+}
 
-  li {
-    margin-top: .1em;
-    margin-bottom: .1em;
-  }
+li {
+  margin-top: 0.1em;
+  margin-bottom: 0.1em;
+}
 
-  #start-button {
-    margin-left: 1.5em;
-  }
+#start-button {
+  margin-left: 1.5em;
+}
 
-  .console {
-    padding: 1em;
-    font-size: 1.5em;
-  }
+.console {
+  padding: 1em;
+  font-size: 1.5em;
+}
 
-  .console > div {
-    margin: .5em;
-  }
+.console > div {
+  margin: 0.5em;
+}
 
-  #stdin-box {
-    border-color: rgb(178,255,89);
-  }
+#stdin-box {
+  border-color: rgb(178, 255, 89);
+}
 </style>
 

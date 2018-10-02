@@ -14,13 +14,10 @@
         <i class="fas fa-play"></i>&nbsp;Run
       </router-link>
       <router-link v-show="$route.path.indexOf('/edit') > -1" :class="{'mdl-layout__tab': true, 'is-active': $route.path.indexOf('/edit') > -1 }" to="/edit">
-        <i class="far fa-edit"></i>&nbsp;Edit
+        <i class="fas fa-edit"></i>&nbsp;Edit
       </router-link>
     </div>
   </header>
-  <div class="mdl-layout__drawer">
-    <span class="mdl-layout-title">{{ title }}</span>
-  </div>
   <main class="mdl-layout__content">
     <section class="mdl-layout__tab-panel is-active">
       <div class="page-content"><router-view /></div>
@@ -48,12 +45,16 @@ main {
   margin-left: 1em;
 }
 
+.pull-right {
+  float: right;
+}
+
 #tab-bar {
   height: auto;
 }
 
 .fab {
-  position: absolute;
+  position: fixed;
   right: 3em;
   bottom: 3em;
   z-index: 100;
