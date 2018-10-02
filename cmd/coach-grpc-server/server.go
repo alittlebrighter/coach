@@ -8,24 +8,28 @@ import (
 	"sync"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	"google.golang.org/grpc"
 
 	"github.com/alittlebrighter/coach-pro"
+	"github.com/alittlebrighter/coach-pro/config"
 	pb "github.com/alittlebrighter/coach-pro/gen/proto"
 	"github.com/alittlebrighter/coach-pro/grpc"
 	"github.com/alittlebrighter/coach-pro/trial"
 )
 
 func appMain(cmd *cobra.Command, args []string) {
-	rpcUri, _ := cmd.Flags().GetString("host")
-	webUri, _ := cmd.Flags().GetString("web-host")
+	rpcUri := viper.GetString("rpc.host")
+	webUri := viper.GetString("rpc.web-host")
 
 	svc := &coachrpc.CoachRPC{GetStore: coach.GetStore}
 
 	rpcServer := grpc.NewServer()
 	pb.RegisterCoachRPCServer(rpcServer, svc)
 
-	log.Println(trial.ExpireNotice)
+	if len(trial.ExpireNotice) > 0 {
+		log.Println(trial.ExpireNotice)
+	}
 
 	wg := sync.WaitGroup{}
 	wg.Add(1)
@@ -58,7 +62,7 @@ func appMain(cmd *cobra.Command, args []string) {
 
 func main() {
 	// Find home directory.
-	home := coach.HomeDir()
+	home := config.HomeDir()
 	os.Mkdir(home, os.ModePerm)
 	coach.DBPath = home + "/coach.db"
 
@@ -73,9 +77,22 @@ func main() {
 		Short: "Coach script library functions available over a gRPC interface.",
 		Run:   appMain,
 	}
-	rootCmd.Flags().String("host", "localhost:8326", "URL to host GRPC server.")
-	rootCmd.Flags().String("web-host", "", "URL to host the gRPC web server.  "+
+	rootCmd.Flags().String("host", viper.GetString("rpc.host"), "URL to host GRPC server.")
+	rootCmd.Flags().String("web-host", viper.GetString("web-host"), "URL to host the gRPC web server.  "+
 		"Web server will not start if this value is blank.")
 
+	configure(rootCmd)
 	rootCmd.Execute()
+}
+
+func configure(cmd *cobra.Command) {
+	viper.SetTypeByDefaultValue(true)
+	viper.SetDefault("rpc.host", "localhost:8326")
+	viper.SetDefault("rpc.web-host", "")
+
+	viper.SetEnvPrefix(config.ENV_PREFIX)
+	viper.AutomaticEnv()
+
+	viper.BindPFlag("rpc.host", cmd.Flags().Lookup("host"))
+	viper.BindPFlag("rpc.web-host", cmd.Flags().Lookup("web-host"))
 }
