@@ -8,12 +8,9 @@ package coach
 import (
 	"fmt"
 	"os"
-	"strings"
 
-	homedir "github.com/mitchellh/go-homedir"
 	"github.com/rs/xid"
 
-	"github.com/alittlebrighter/coach-pro/platforms"
 	"github.com/alittlebrighter/coach-pro/storage/database"
 )
 
@@ -30,6 +27,7 @@ type Closable interface {
 	Close() error
 }
 
+// TODO: this needs to return an interface
 func GetStore(readonly bool) *database.BoltDB {
 	store, err := database.NewBoltDB(DBPath, readonly)
 	if err != nil {
@@ -37,21 +35,4 @@ func GetStore(readonly bool) *database.BoltDB {
 		os.Exit(1)
 	}
 	return store
-}
-
-func HomeDir() string {
-	var home string
-	envSetHome := os.Getenv("COACH_HOME")
-	defaultAppDir := platforms.DefaultHomeDir()
-	_, sysErr := os.Stat(defaultAppDir + "/coach")
-	switch {
-	case len(envSetHome) > 0:
-		home = envSetHome
-	case sysErr == nil:
-		home = defaultAppDir + "/coach"
-	default:
-		homeDir, _ := homedir.Dir()
-		home = homeDir + "/.coach"
-	}
-	return strings.Replace(home, `\`, "/", -1)
 }

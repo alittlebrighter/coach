@@ -9,6 +9,7 @@ import (
 	"os"
 
 	coach "github.com/alittlebrighter/coach-pro"
+	conf "github.com/alittlebrighter/coach-pro/config"
 	"github.com/alittlebrighter/coach-pro/platforms"
 	"github.com/alittlebrighter/coach-pro/storage/database"
 	"github.com/alittlebrighter/coach-pro/trial"
@@ -23,7 +24,7 @@ var (
 
 func main() {
 	// Find home directory.
-	home = coach.HomeDir()
+	home = conf.HomeDir()
 	os.Mkdir(home, os.ModePerm)
 	coach.DBPath = home + "/coach.db"
 
@@ -34,7 +35,7 @@ func main() {
 			trial.Version,
 			"Save, document, query, and run all of your scripts.",
 			trial.ExpireNotice,
-			home+"/config.yaml",
+			home+"/config",
 			home+"/coach.db",
 		),
 		Run: appMain,
@@ -134,7 +135,7 @@ func initConfig() {
 	viper.AddConfigPath(home)
 	viper.SetConfigName("config")
 
-	viper.SetEnvPrefix("coach")
+	viper.SetEnvPrefix(conf.ENV_PREFIX)
 	viper.AutomaticEnv()
 
 	// if no config file is found, write the defaults to one
