@@ -11,7 +11,7 @@ import (
 
 var (
 	// set this when building with
-	// `-ldflags "-X 'github.com/alittlebrighter/coach-pro/trial.TRIAL_DATE_LENGTH=$(date)|${trial_length_in_days}'"`
+	// `-ldflags "-X 'github.com/alittlebrighter/coach/trial.TRIAL_DATE_LENGTH=$(date)|${trial_length_in_days}'"`
 	TRIAL_DATE_LENGTH string
 	expiration        time.Time
 

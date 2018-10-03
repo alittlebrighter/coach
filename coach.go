@@ -11,7 +11,7 @@ import (
 
 	"github.com/rs/xid"
 
-	"github.com/alittlebrighter/coach-pro/storage/database"
+	"github.com/alittlebrighter/coach/storage/database"
 )
 
 var (

@@ -8,10 +8,10 @@ import (
 	"strings"
 	"sync"
 
-	coach "github.com/alittlebrighter/coach-pro"
-	pb "github.com/alittlebrighter/coach-pro/gen/proto"
-	"github.com/alittlebrighter/coach-pro/platforms"
-	"github.com/alittlebrighter/coach-pro/storage/database"
+	coach "github.com/alittlebrighter/coach"
+	pb "github.com/alittlebrighter/coach/gen/proto"
+	"github.com/alittlebrighter/coach/platforms"
+	"github.com/alittlebrighter/coach/storage/database"
 )
 
 const (

@@ -20,9 +20,9 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
-	"github.com/alittlebrighter/coach-pro"
-	models "github.com/alittlebrighter/coach-pro/gen/proto"
-	"github.com/alittlebrighter/coach-pro/storage/database"
+	"github.com/alittlebrighter/coach"
+	models "github.com/alittlebrighter/coach/gen/proto"
+	"github.com/alittlebrighter/coach/storage/database"
 )
 
 func appMain(cmd *cobra.Command, args []string) {

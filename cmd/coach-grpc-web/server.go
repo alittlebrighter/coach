@@ -15,8 +15,8 @@ import (
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
 
-	pb "github.com/alittlebrighter/coach-pro/gen/proto"
-	"github.com/alittlebrighter/coach-pro/grpc"
+	pb "github.com/alittlebrighter/coach/gen/proto"
+	"github.com/alittlebrighter/coach/grpc"
 )
 
 var json = jsoniter.ConfigCompatibleWithStandardLibrary

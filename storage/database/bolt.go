@@ -13,7 +13,7 @@ import (
 	"github.com/json-iterator/go"
 	"github.com/rs/xid"
 
-	models "github.com/alittlebrighter/coach-pro/gen/proto"
+	models "github.com/alittlebrighter/coach/gen/proto"
 )
 
 const (

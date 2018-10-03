@@ -18,9 +18,9 @@ import (
 	"github.com/rs/xid"
 	"github.com/spf13/viper"
 
-	models "github.com/alittlebrighter/coach-pro/gen/proto"
-	"github.com/alittlebrighter/coach-pro/platforms"
-	"github.com/alittlebrighter/coach-pro/storage/database"
+	models "github.com/alittlebrighter/coach/gen/proto"
+	"github.com/alittlebrighter/coach/platforms"
+	"github.com/alittlebrighter/coach/storage/database"
 )
 
 const Header = "exported from COACH - https://github.com/alittlebrighter/coach"

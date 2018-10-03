@@ -11,11 +11,11 @@ import (
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
 
-	"github.com/alittlebrighter/coach-pro"
-	"github.com/alittlebrighter/coach-pro/config"
-	pb "github.com/alittlebrighter/coach-pro/gen/proto"
-	"github.com/alittlebrighter/coach-pro/grpc"
-	"github.com/alittlebrighter/coach-pro/trial"
+	"github.com/alittlebrighter/coach"
+	"github.com/alittlebrighter/coach/config"
+	pb "github.com/alittlebrighter/coach/gen/proto"
+	"github.com/alittlebrighter/coach/grpc"
+	"github.com/alittlebrighter/coach/trial"
 )
 
 func appMain(cmd *cobra.Command, args []string) {

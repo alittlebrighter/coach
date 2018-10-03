@@ -5,8 +5,8 @@ import (
 	"strings"
 	"time"
 
-	models "github.com/alittlebrighter/coach-pro/gen/proto"
-	"github.com/alittlebrighter/coach-pro/platforms"
+	models "github.com/alittlebrighter/coach/gen/proto"
+	"github.com/alittlebrighter/coach/platforms"
 )
 
 func IgnoreHistory(lineCount int, allVariations, remove bool, store IgnoreStore) error {

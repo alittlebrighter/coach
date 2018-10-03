@@ -4,7 +4,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/alittlebrighter/coach-pro/platforms"
+	"github.com/alittlebrighter/coach/platforms"
 	homedir "github.com/mitchellh/go-homedir"
 )
 
