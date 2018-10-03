@@ -81,7 +81,7 @@ export default {
         this.alias + " " + this.args,
         this.parseResponse
       );
-      this.lines.push({ content: "--- Running ---", error: false });
+      this.lines.push({ content: "--- Running: '" + this.alias + (this.args.length > 0 ? "' with args '" + this.args : "") + "' ---", error: false });
     },
     parseResponse(response, unsub) {
       if (response["output"]) {
@@ -138,6 +138,7 @@ li {
 .console {
   padding: 1em;
   font-size: 1.5em;
+  font-family: monospace !important;
 }
 
 .console > div {
