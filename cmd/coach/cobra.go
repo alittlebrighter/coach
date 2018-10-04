@@ -12,7 +12,6 @@ import (
 	conf "github.com/alittlebrighter/coach/config"
 	"github.com/alittlebrighter/coach/platforms"
 	"github.com/alittlebrighter/coach/storage/database"
-	"github.com/alittlebrighter/coach/trial"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"gopkg.in/yaml.v2"
@@ -31,10 +30,8 @@ func main() {
 	rootCmd := &cobra.Command{
 		Use:   "coach",
 		Short: "A tool to help you save and document common commands executed on the command line.",
-		Long: fmt.Sprintf("Coach %s: %s\n%s\nConfiguration: %s\nScript DB: %s\n\nFor support contact support.coach@mg.alittlebrighter.io",
-			trial.Version,
+		Long: fmt.Sprintf("Coach: %s\n\nConfiguration: %s\nScript DB: %s",
 			"Save, document, query, and run all of your scripts.",
-			trial.ExpireNotice,
 			home+"/config",
 			home+"/coach.db",
 		),
@@ -49,47 +46,46 @@ func main() {
 	*/
 	historyCmd := &cobra.Command{
 		Use:   "history",
-		Short: "Store and query command history.",
+		Short: "Store and query command history",
 		Run:   history,
 	}
 	historyCmd.Flags().StringP("record", "r", "", "Record command.  With `bash` you can use \"$(history 1)\"")
-	historyCmd.Flags().BoolP("all", "a", false, "Retrieve history from all sessions.")
-	historyCmd.Flags().Bool("import", false, "Import command history.  Supports bash and PowerShell.")
+	historyCmd.Flags().BoolP("all", "a", false, "Retrieve history from all sessions")
 
 	docCmd := &cobra.Command{
 		Use:     "lib",
-		Short:   "Save and query scripts/commands with tags and documentation.  Default is to save and document the most recent command.",
+		Short:   "Save and query scripts/commands with tags and documentation",
 		Example: "coach doc [alias] [tags] [comment] # empty alias represented by \"\", tag list must be quoted if it contains spaces",
 		Run:     doc,
 	}
-	docCmd.Flags().StringP("query", "q", database.Wildcard, "Query your saved commands by tags.")
-	docCmd.Flags().StringP("script", "s", "", "Quoted command that you would like to document and save.")
-	docCmd.Flags().StringP("edit", "e", "", "Edit the script specified by alias.")
-	docCmd.Flags().IntP("history-lines", "l", 1, "Number of most recent lines in history to put into the script.")
-	docCmd.Flags().String("delete", "", "Delete a saved script.")
-	docCmd.Flags().String("restore", "", "Restore a deleted script.")
-	docCmd.Flags().Bool("empty-trash", false, "Completely erase all deleted scripts.")
+	docCmd.Flags().StringP("query", "q", database.Wildcard, "Query your saved commands by tags")
+	docCmd.Flags().StringP("script", "s", "", "Quoted command that you would like to document and save")
+	docCmd.Flags().StringP("edit", "e", "", "Edit the script specified by alias")
+	docCmd.Flags().IntP("history-lines", "l", 1, "Number of most recent lines in history to put into the script")
+	docCmd.Flags().String("delete", "", "Delete a saved script")
+	docCmd.Flags().String("restore", "", "Restore a deleted script")
+	docCmd.Flags().Bool("empty-trash", false, "Completely erase all deleted scripts")
 
 	ignoreCmd := &cobra.Command{
 		Use:   "ignore",
-		Short: "Ignore this command when scanning for duplicates to prompt for documentation.  Defaults to the last run command.",
+		Short: "Ignore this command when scanning for duplicates to prompt for documentation.  Defaults to the last run command",
 		Run:   ignore,
 	}
-	ignoreCmd.Flags().BoolP("remove", "r", false, "Remove a command from the ignore list.")
-	ignoreCmd.Flags().BoolP("all", "a", false, "Ignore all non-compound commands starting with the first word from the previous line.")
-	ignoreCmd.Flags().IntP("history-lines", "l", 1, "Number of most recent lines in history to ignore.")
+	ignoreCmd.Flags().BoolP("remove", "r", false, "Remove a command from the ignore list")
+	ignoreCmd.Flags().BoolP("all", "a", false, "Ignore all non-compound commands starting with the first word from the previous line")
+	ignoreCmd.Flags().IntP("history-lines", "l", 1, "Number of most recent lines in history to ignore")
 
 	runCmd := &cobra.Command{
 		Use:   "run",
-		Short: "Run a saved and documented command referenced by alias.",
+		Short: "Run a saved and documented command referenced by alias",
 		Run:   run,
 	}
-	runCmd.Flags().BoolP("check", "c", false, "Review the command documentation before running.")
-	runCmd.Flags().DurationP("timeout", "t", 0, "Specify a maximum time this script should run.")
+	runCmd.Flags().BoolP("check", "c", false, "Review the command documentation before running")
+	runCmd.Flags().DurationP("timeout", "t", 0, "Specify a maximum time this script should run")
 
 	configCmd := &cobra.Command{
 		Use:   "config",
-		Short: "Set default config values.",
+		Short: "Set default config values",
 		Run:   config,
 	}
 

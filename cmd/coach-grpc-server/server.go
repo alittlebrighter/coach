@@ -15,7 +15,6 @@ import (
 	"github.com/alittlebrighter/coach/config"
 	pb "github.com/alittlebrighter/coach/gen/proto"
 	"github.com/alittlebrighter/coach/grpc"
-	"github.com/alittlebrighter/coach/trial"
 )
 
 func appMain(cmd *cobra.Command, args []string) {
@@ -26,10 +25,6 @@ func appMain(cmd *cobra.Command, args []string) {
 
 	rpcServer := grpc.NewServer()
 	pb.RegisterCoachRPCServer(rpcServer, svc)
-
-	if len(trial.ExpireNotice) > 0 {
-		log.Println(trial.ExpireNotice)
-	}
 
 	wg := sync.WaitGroup{}
 	wg.Add(1)

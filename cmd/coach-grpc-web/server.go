@@ -130,10 +130,10 @@ func (a *appContext) SaveScript(req *RPCCall, out chan *RPCCall) {
 }
 
 func (a *appContext) RunScript(req *RPCCall, in, out chan *RPCCall) {
-	log.Println("started runScript")
 	streams, err := a.rpcClient.RunScript(context.Background())
 	if err != nil {
-		log.Fatalln(err)
+		log.Println("runscript starting:", err)
+		return
 	}
 
 	wg := sync.WaitGroup{}
@@ -149,7 +149,6 @@ func (a *appContext) RunScript(req *RPCCall, in, out chan *RPCCall) {
 			}
 
 			if err != nil {
-				log.Println("incoming stream:", err)
 				incoming <- &pb.RunEventOut{Output: coachrpc.EOF}
 				incoming <- &pb.RunEventOut{Error: coachrpc.EOF}
 				break main
@@ -172,35 +171,29 @@ func (a *appContext) RunScript(req *RPCCall, in, out chan *RPCCall) {
 			stderrClosed = stderrClosed || event.GetError() == coachrpc.EOF
 			switch {
 			case !chanOk:
-				log.Println("!chanOk")
 				fallthrough
 			case len(event.GetOutput()) == 0 && len(event.GetError()) == 0:
-				log.Println("setting both closed")
 				stdoutClosed, stderrClosed = true, true
 			default:
 				response.Output = event.GetOutput()
 				response.Error = event.GetError()
 
 				out <- response
-				log.Println("sent to WS:", response)
 			}
 		case input := <-in:
 			streams.Send(&pb.RunEventIn{Input: BytesToString(input.Input)})
-			log.Println("sent input to RPC server:", input.Input)
 		}
 	}
 
 	out <- &RPCCall{Id: req.Id, Method: req.Method, Output: coachrpc.EOF, Error: coachrpc.EOF}
 	streams.Send(&pb.RunEventIn{Input: coachrpc.EOF})
 	streams.CloseSend()
-	log.Println("sent CloseSend")
 	wg.Wait()
 
 	stdoutClosed, stderrClosed = true, true
 
 	close(in)
 	delete(a.ActiveInputs, req.Id)
-	log.Println("finished runScript")
 }
 
 var upgrader = websocket.Upgrader{} // use default options
@@ -223,7 +216,7 @@ func (a *appContext) rpc(w http.ResponseWriter, r *http.Request) {
 		for {
 			req := new(RPCCall)
 			if err := c.ReadJSON(&req); err != nil {
-				log.Println("ws read:", err)
+				log.Println("websocket read:", err)
 				break
 			}
 
@@ -261,7 +254,7 @@ func (a *appContext) rpc(w http.ResponseWriter, r *http.Request) {
 		for out := range wsOut {
 			err = c.WriteJSON(out)
 			if err != nil {
-				log.Println("ws write:", err)
+				log.Println("websocket write:", err)
 				break
 			}
 		}

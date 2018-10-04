@@ -60,7 +60,6 @@ func (c *CoachRPC) SaveScript(ctx context.Context, script *pb.SaveScriptRequest)
 }
 
 func (c *CoachRPC) RunScript(streams pb.CoachRPC_RunScriptServer) error {
-	log.Println("started RunScript")
 	initEvent, err := streams.Recv()
 	if err != nil {
 		return err
@@ -109,14 +108,12 @@ func (c *CoachRPC) RunScript(streams pb.CoachRPC_RunScriptServer) error {
 	wg.Add(1)
 	go func() {
 		parseStream(IOStreams.Stdout, output, initEvent.GetResponseSize())
-		log.Println("closed stdout")
 	}()
 
 	stderr := make(chan string)
 	wg.Add(1)
 	go func() {
 		parseStream(IOStreams.Stderr, stderr, initEvent.GetResponseSize())
-		log.Println("closed stderr")
 	}()
 
 	go func() {
@@ -126,11 +123,12 @@ func (c *CoachRPC) RunScript(streams pb.CoachRPC_RunScriptServer) error {
 			}
 
 			streams.Send(&pb.RunEventOut{Output: out})
-			log.Println("sent StdOut:", out)
 		}
 		err := streams.Send(&pb.RunEventOut{Output: EOF})
+		if err != nil {
+			log.Println("output send:", err)
+		}
 		wg.Done()
-		log.Println("sent EOF to Output", err)
 	}()
 
 	go func() {
@@ -140,11 +138,12 @@ func (c *CoachRPC) RunScript(streams pb.CoachRPC_RunScriptServer) error {
 			}
 
 			streams.Send(&pb.RunEventOut{Error: err})
-			log.Println("sent StdErr:", err)
 		}
 		err := streams.Send(&pb.RunEventOut{Error: EOF})
+		if err != nil {
+			log.Println("error send:", err)
+		}
 		wg.Done()
-		log.Println("sent EOF to Error", err)
 	}()
 
 	// proxy the input
@@ -159,7 +158,6 @@ func (c *CoachRPC) RunScript(streams pb.CoachRPC_RunScriptServer) error {
 			input <- inEvent.GetInput()
 		}
 		close(input)
-		log.Println("input stream closed")
 	}()
 	go func() {
 		for in := range input {
@@ -169,12 +167,10 @@ func (c *CoachRPC) RunScript(streams pb.CoachRPC_RunScriptServer) error {
 			}
 			IOStreams.Stdin.Write([]byte(strings.TrimSpace(in) + platforms.Newline(1)))
 		}
-		log.Println("closed stdin stream")
 	}()
 
 	err = <-runErr
 	shutdown = true
-	log.Println("finished RunScript")
 	return err
 }
 
