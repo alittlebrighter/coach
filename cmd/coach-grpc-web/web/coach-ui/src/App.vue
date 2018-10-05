@@ -7,7 +7,7 @@
     </div>
     <!-- Tabs -->
     <div class="mdl-layout__tab-bar mdl-js-ripple-effect" id="tab-bar">
-      <router-link :class="{'mdl-layout__tab': true, 'is-active': $route.path == '/'}" to="/"><i class="far fa-search">
+      <router-link :class="{'mdl-layout__tab': true, 'is-active': $route.path == '/'}" to="/"><i class="fas fa-search">
         </i>&nbsp;Scripts
       </router-link>
       <router-link v-show="$route.path.indexOf('/run') > -1" :class="{'mdl-layout__tab': true, 'is-active': $route.path.indexOf('/run') > -1 }" to="/run">
@@ -39,7 +39,6 @@ export default {
 
 <style lang="scss">
 @import "@/assets/styles/material-design-lite/material-design-lite.scss";
-@import "assets/fontawesome/css/all.min.css";
 
 main {
   margin-left: 1em;
