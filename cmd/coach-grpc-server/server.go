@@ -10,6 +10,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 
 	"github.com/alittlebrighter/coach"
 	"github.com/alittlebrighter/coach/config"
@@ -23,7 +24,14 @@ func appMain(cmd *cobra.Command, args []string) {
 
 	svc := &coachrpc.CoachRPC{GetStore: coach.GetStore}
 
-	rpcServer := grpc.NewServer()
+	grpcOpts := []grpc.ServerOption{}
+	if tlsOpt, err := credentials.NewServerTLSFromFile(viper.GetString("security.certificate_filepath"), viper.GetString("security.key_filepath")); err == nil {
+		grpcOpts = append(grpcOpts, grpc.Creds(tlsOpt))
+	} else {
+		log.Println("tls certificate:", err)
+		log.Println("WARNING: server running without TLS, all IO over the network is being transmitted in plaintext")
+	}
+	rpcServer := grpc.NewServer(grpcOpts...)
 	pb.RegisterCoachRPCServer(rpcServer, svc)
 
 	wg := sync.WaitGroup{}
@@ -39,6 +47,7 @@ func appMain(cmd *cobra.Command, args []string) {
 		}
 
 		if err := rpcServer.Serve(listen); err != nil {
+			rpcServer.GracefulStop()
 			log.Fatalf("CoachRPC failed to serve connections: %v\n", err)
 		}
 	}()
@@ -72,8 +81,8 @@ func main() {
 		Short: "Coach script library functions available over a gRPC interface.",
 		Run:   appMain,
 	}
-	rootCmd.Flags().String("host", viper.GetString("rpc.host"), "URL to host GRPC server.")
-	rootCmd.Flags().String("web-host", viper.GetString("web-host"), "URL to host the gRPC web server.  "+
+	rootCmd.Flags().String("host", "localhost:8326", "URL to host GRPC server.")
+	rootCmd.Flags().String("web-host", "", "URL to host the gRPC web server.  "+
 		"Web server will not start if this value is blank.")
 
 	configure(rootCmd)
@@ -81,12 +90,12 @@ func main() {
 }
 
 func configure(cmd *cobra.Command) {
-	viper.SetTypeByDefaultValue(true)
+	config.AppConfiguration()
+
 	viper.SetDefault("rpc.host", "localhost:8326")
 	viper.SetDefault("rpc.web-host", "")
-
-	viper.SetEnvPrefix(config.ENV_PREFIX)
-	viper.AutomaticEnv()
+	viper.SetDefault("security.certificate_filepath", config.HomeDir()+"/security/coach.pem")
+	viper.SetDefault("security.key_filepath", config.HomeDir()+"/security/coach_key.pem")
 
 	viper.BindPFlag("rpc.host", cmd.Flags().Lookup("host"))
 	viper.BindPFlag("rpc.web-host", cmd.Flags().Lookup("web-host"))

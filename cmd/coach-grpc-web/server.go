@@ -13,8 +13,11 @@ import (
 	"github.com/json-iterator/go"
 	"github.com/rs/xid"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 
+	"github.com/alittlebrighter/coach/config"
 	pb "github.com/alittlebrighter/coach/gen/proto"
 	"github.com/alittlebrighter/coach/grpc"
 )
@@ -22,8 +25,8 @@ import (
 var json = jsoniter.ConfigCompatibleWithStandardLibrary
 
 func appMain(cmd *cobra.Command, args []string) {
-	webUri, _ := cmd.Flags().GetString("host")
-	rpcUri, _ := cmd.Flags().GetString("rpc-host")
+	webUri := viper.GetString("web.host")
+	rpcUri := viper.GetString("rpc.host")
 
 	appCtx, err := NewAppContext(rpcUri)
 	if err != nil {
@@ -53,7 +56,20 @@ func main() {
 	rootCmd.Flags().String("host", "localhost:26224", "Address to serve on.")
 	rootCmd.Flags().String("rpc-host", ":8326", "URI for the coach gRPC server.")
 
+	configure(rootCmd)
+
 	rootCmd.Execute()
+}
+
+func configure(cmd *cobra.Command) {
+	config.AppConfiguration()
+
+	viper.SetDefault("rpc.host", ":8326")
+	viper.SetDefault("web.host", "localhost:26224")
+	viper.SetDefault("security.certificate_filepath", config.HomeDir()+"/security/coach.pem")
+
+	viper.BindPFlag("rpc.host", cmd.Flags().Lookup("rpc-host"))
+	viper.BindPFlag("web.host", cmd.Flags().Lookup("host"))
 }
 
 type appContext struct {
@@ -67,7 +83,16 @@ func NewAppContext(rpcUri string) (*appContext, error) {
 	ctx := &appContext{ActiveInputs: map[string]chan *RPCCall{}}
 
 	var err error
-	ctx.rpcConn, err = grpc.Dial(rpcUri, grpc.WithInsecure())
+	dialOpts := []grpc.DialOption{}
+	if creds, err := credentials.NewClientTLSFromFile(viper.GetString("security.certificate_filepath"), ""); err == nil {
+		dialOpts = append(dialOpts, grpc.WithTransportCredentials(creds))
+	} else {
+		dialOpts = append(dialOpts, grpc.WithInsecure())
+		log.Println("tls certificate:", err)
+		log.Println("WARNING: dialing server running without TLS, all IO over the network is being transmitted in plaintext")
+	}
+
+	ctx.rpcConn, err = grpc.Dial(rpcUri, dialOpts...)
 	if err != nil {
 		return nil, err
 	}

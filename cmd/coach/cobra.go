@@ -5,7 +5,6 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 
 	coach "github.com/alittlebrighter/coach"
@@ -14,7 +13,6 @@ import (
 	"github.com/alittlebrighter/coach/storage/database"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"gopkg.in/yaml.v2"
 )
 
 var (
@@ -122,22 +120,10 @@ func initConfig() {
 		store.Close()
 	}
 
-	viper.SetTypeByDefaultValue(true)
+	conf.AppConfiguration()
+
 	viper.SetDefault("default_shell", platforms.DefaultShell)
 	viper.SetDefault("history.max_lines", 1000)
 	viper.SetDefault("history.reps_pre_doc_prompt", 3)
 	viper.SetDefault("timestamp_format", "01/02 03:04:05PM")
-
-	viper.AddConfigPath(home)
-	viper.SetConfigName("config")
-
-	viper.SetEnvPrefix(conf.ENV_PREFIX)
-	viper.AutomaticEnv()
-
-	// if no config file is found, write the defaults to one
-	if err := viper.ReadInConfig(); err != nil {
-		defaults := viper.AllSettings()
-		data, _ := yaml.Marshal(&defaults)
-		ioutil.WriteFile(home+"/config.yaml", data, database.FilePerms)
-	}
 }
