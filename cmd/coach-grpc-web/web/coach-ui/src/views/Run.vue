@@ -35,7 +35,7 @@
         <input v-model="stdin" v-on:keyup.enter="sendInput(stdin)" class="mdl-textfield__input" type="text" id="stdin-box">
       </div>
       <button @click="sendInput(stdin)" class="mdl-button mdl-js-button mdl-button--icon">
-        <i class="far fa-sign-in"></i>
+        <i class="fas fa-sign-in-alt"></i>
       </button>
     </form>
     </div>
@@ -81,7 +81,11 @@ export default {
         this.alias + " " + this.args,
         this.parseResponse
       );
-      this.lines.push({ content: "--- Running: '" + this.alias + (this.args.length > 0 ? "' with args '" + this.args : "") + "' ---", error: false });
+      this.lines.push({ 
+        content: "--- Running: '" + this.alias +
+          (this.args.length > 0 ? "' with args '" + this.args : "") + "' ---",
+        error: false 
+      });
     },
     parseResponse(response, unsub) {
       if (response["output"]) {
