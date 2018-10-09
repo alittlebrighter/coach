@@ -11,7 +11,7 @@
           placeholder="Search by tag" />
       </div>
       <button @click="fetchScripts" class="mdl-button mdl-js-button mdl-button--icon">
-        <i class="far fa-search"></i>
+        <i class="fas fa-search"></i>
       </button>
     </form>
 
