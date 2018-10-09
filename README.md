@@ -1,9 +1,6 @@
 ## Coach [![Build Status](https://travis-ci.org/alittlebrighter/coach.svg?branch=master)](http://travis-ci.org/alittlebrighter/coach)
 
-Coach helps you document Ops processes by recording all of your commands and prompting you to save an alias and document frequently run commands.  This 
-documentation can then be queried later on the command line.
-
-Go beyond autosuggestion tools, quickly attach queryable tags and documentation to all of your scripts without leaving the command line.
+Coach helps you maximize you and your team's performance on the command line.  
 
 ### Install
 `go get -u github.com/alittlebrighter/coach/cmd/coach`
@@ -11,11 +8,13 @@ Go beyond autosuggestion tools, quickly attach queryable tags and documentation 
 To use `coach` to monitor your command line usage, add the following to your `.bashrc` file: 
 ```
 function prompt {
-    coach history --record "$(history 1)" # you do actually need this
+    coach history --record "$(history 1)"
 }
 
 PROMPT_COMMAND=prompt
 ```
+
+There is currently no way to track command history in any other shell (I'm open to ideas on how to resolve that).
 
 ### Usage
 Once you've started a new session just continue using your terminal as you normally would and `coach` will prompt you to save frequently run commands.
@@ -31,13 +30,12 @@ Just save and quit to keep your changes in `coach`.
 
 Run `coach --help` to see other available options. 
 
-### Notes
-Try it out, submit an issue and/or PR if you see room for improvement.
+### Docs
 
-- Return all documented scripts with the tag "?" or just run `coach doc`
-- Basic Windows support has been implemented.  You can document, save, and run batch and Powershell scripts.  You can manually add lines to your history but a good way of automatically tracking history in the Windows command prompt or Powershell hasn't been found yet.
-- Rudimentary support for other interpreters.  So long as the interpreter takes a file name as a first argument, and you enter the `SHELL` value as it appears on your `$PATH` it should work.  `bash` is the default.
-- `coach` history ignores commands starting with 'coach'
+Until I get proper documentation up for now you can use the following:
+- `coach` - run `coach --help` 
+- `coach-grpc-server` - the `.proto` files that the gRPC service implements can be found in the `protobuf` directory.  There are some comments there but further documentation will be provided once I have an interface to plug in security components.
+- `coach-grpc-web` - documentation waiting on security components
 
 ### Contributing
 
