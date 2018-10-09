@@ -287,7 +287,7 @@ func UnmarshalEdit(contents, originalShell string) (ds models.DocumentedScript, 
 		}
 
 		if inDoc {
-			ds.Documentation += strings.TrimSpace(strings.TrimLeft(p, shell.LineComment())) + platforms.Newline(1)
+			ds.Documentation += strings.TrimRight(strings.TrimLeft(p, shell.LineComment()), "\t\r\n ") + platforms.Newline(1)
 		} else if inScript {
 			ds.Script.Content += p + platforms.Newline(1)
 		}
