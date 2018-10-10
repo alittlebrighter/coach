@@ -7,10 +7,10 @@ import (
 	"path/filepath"
 	"strings"
 
-	coach "github.com/alittlebrighter/coach-pro"
-	"github.com/alittlebrighter/coach-pro/gen/models"
-	"github.com/alittlebrighter/coach-pro/platforms"
-	"github.com/alittlebrighter/coach-pro/storage/database"
+	coach "github.com/alittlebrighter/coach"
+	models "github.com/alittlebrighter/coach/gen/proto"
+	"github.com/alittlebrighter/coach/platforms"
+	"github.com/alittlebrighter/coach/storage/database"
 	"github.com/rs/xid"
 )
 

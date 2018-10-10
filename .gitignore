@@ -1,0 +1,3 @@
+cmd/coach-grpc-web/web/coach-ui/node_modules/**/*
+fontawesome
+material-design-lite

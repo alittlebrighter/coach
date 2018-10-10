@@ -10,10 +10,10 @@ import (
 
 	"github.com/buger/jsonparser"
 	bolt "github.com/coreos/bbolt"
-	"github.com/json-iterator/go" // for full (de)serialization
+	"github.com/json-iterator/go"
 	"github.com/rs/xid"
 
-	"github.com/alittlebrighter/coach-pro/gen/models"
+	models "github.com/alittlebrighter/coach/gen/proto"
 )
 
 const (
@@ -47,10 +47,6 @@ type BoltDB struct {
 func NewBoltDB(path string, readonly bool) (b *BoltDB, err error) {
 	b = new(BoltDB)
 	b.db, err = bolt.Open(path, FilePerms, &bolt.Options{Timeout: 2 * time.Second, ReadOnly: readonly})
-	if err != nil {
-		return
-	}
-	err = b.initDB()
 	return
 }
 
@@ -59,7 +55,7 @@ func (b *BoltDB) Close() error {
 	return b.db.Close()
 }
 
-func (b *BoltDB) initDB() error {
+func (b *BoltDB) Init() error {
 	if b.db.IsReadOnly() {
 		return nil
 	}
@@ -166,32 +162,39 @@ func (b *BoltDB) QueryScripts(tags ...string) ([]models.DocumentedScript, error)
 
 		for k, v := c.First(); k != nil; k, v = c.Next() {
 			var savedCmd models.DocumentedScript
+			shouldAdd := false
 			if all && len(k) > 0 {
-				err := json.Unmarshal(v, &savedCmd)
-				if err == nil {
-					cmds = append(cmds, savedCmd)
-				}
-				continue
+				shouldAdd = true
+				goto add
 			}
 
-			// this is an ugly abuse of scoping rules
-			skip := false
-			jsonparser.ArrayEach(v, func(value []byte, dataType jsonparser.ValueType, offset int, err error) {
-				if skip {
-					return
+			for _, tag := range tags {
+				tag = strings.ToLower(tag)
+
+				if tag[0] == '~' && len(tag) > 1 && strings.Contains(strings.ToLower(string(k)), tag[1:]) ||
+					strings.ToLower(string(k)) == tag {
+					shouldAdd = true
+					goto add
 				}
-				// simple for now, just add command to the list if any tags match
-				for _, tag := range tags {
-					if tag == string(value) {
-						err = json.Unmarshal(v, &savedCmd)
-						if err != nil {
-							skip = true
-							break
-						}
-						cmds = append(cmds, savedCmd)
+
+				jsonparser.ArrayEach(v, func(scriptTag []byte, dataType jsonparser.ValueType, offset int, err error) {
+					switch {
+					case shouldAdd || err != nil:
+						return
+					case tag[0] == '~' && len(tag) > 1 && strings.Contains(strings.ToLower(string(scriptTag)), tag[1:]):
+						fallthrough
+					case strings.ToLower(string(scriptTag)) == tag:
+						shouldAdd = true
 					}
+				}, "tags")
+			}
+
+		add:
+			if shouldAdd {
+				if err := json.Unmarshal(v, &savedCmd); err == nil {
+					cmds = append(cmds, savedCmd)
 				}
-			}, "tags")
+			}
 		}
 
 		return nil
@@ -309,12 +312,27 @@ func (b *BoltDB) Save(id []byte, instance interface{}, overwrite bool) (err erro
 	if id == nil || len(id) == 0 {
 		id = xid.New().Bytes()
 	}
-	return b.db.Update(func(tx *bolt.Tx) error {
+	return b.db.Batch(func(tx *bolt.Tx) error {
 		if !overwrite && tx.Bucket(bucket).Get(id) != nil {
 			return ErrAlreadyExists
 		}
 		return saveToBucket(tx, bucket, id, instance)
 	})
+}
+
+func (b *BoltDB) SaveBatch(toSave <-chan HasID, bucket []byte) <-chan error {
+	errs := make(chan error)
+
+	go func() {
+		b.db.Batch(func(tx *bolt.Tx) error {
+			for instance := range toSave {
+				saveToBucket(tx, bucket, instance.GetId(), instance)
+			}
+			return nil
+		})
+	}()
+
+	return errs
 }
 
 func saveToBucket(tx *bolt.Tx, bucket []byte, id []byte, val interface{}) error {
@@ -323,4 +341,8 @@ func saveToBucket(tx *bolt.Tx, bucket []byte, id []byte, val interface{}) error 
 		return err
 	}
 	return tx.Bucket(bucket).Put(id, data)
+}
+
+type HasID interface {
+	GetId() []byte
 }

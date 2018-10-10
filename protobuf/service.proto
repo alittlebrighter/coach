@@ -1,0 +1,64 @@
+syntax="proto3";
+
+package io.alittlebrighter.coach;
+
+option go_package = "proto";
+
+import "coach.proto";
+
+service CoachRPC {
+    // query shoud be a comma delimited list of tags
+    rpc QueryScripts(ScriptsQuery) returns (GetScriptsResponse);
+
+    // query should be a script alias
+    rpc GetScript(ScriptsQuery) returns (DocumentedScript);
+
+    // the first RunEventIn event should contain the alias for the script
+    // you want to run, subsequent events are treated as stdin passed to 
+    // the script while running
+    rpc RunScript(stream RunEventIn) returns (stream RunEventOut);
+
+    rpc SaveScript(SaveScriptRequest) returns (Response);
+}
+
+message ScriptsQuery {
+    string query = 1;
+}
+
+message GetScriptsResponse {
+    repeated DocumentedScript scripts = 1;
+}
+
+// RunEventIn has multiple uses, the first event should contain the tag of the script
+// to run in the input.  Subsequent events should contain responses to requests for input
+// and finally it should end with an EOF.
+message RunEventIn {
+    string input = 1;
+    repeated EnvVar env = 2;
+
+    // specify the batch size in bytes you would like the response output to come in
+    uint32 responseSize = 3;
+}
+
+message RunEventOut {
+    string output = 1;
+    string error = 2;
+
+    // exitCode means nothing until stream finishes
+    int32 exitCode = 3;
+}
+
+message EnvVar {
+    string name = 1;
+    string value = 2;
+}
+
+message SaveScriptRequest {
+    DocumentedScript script = 1;
+    bool overwrite = 2;
+}
+
+message Response {
+    bool success = 1;
+    string error = 2;
+}

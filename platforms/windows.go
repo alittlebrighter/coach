@@ -3,6 +3,7 @@
 package platforms
 
 import (
+	"context"
 	"os"
 	"os/exec"
 	"strings"
@@ -14,6 +15,10 @@ const DefaultShell = "windowsCMD"
 
 func DefaultHomeDir() string {
 	return strings.Replace(os.Getenv("ProgramFiles"), "\\", "/", -1)
+}
+
+func GetTTY() string {
+	return "windows"
 }
 
 func Newline(count uint) string {
@@ -52,9 +57,13 @@ func GetPlatformShell(name string) Shell {
 	}
 }
 
+func KillProcess(cmd *exec.Cmd) error {
+	return cmd.Process.Kill()
+}
+
 type PowerShell struct{}
 
-func (p *PowerShell) BuildCommand(script string, args []string) (*exec.Cmd, func(), error) {
+func (p *PowerShell) BuildCommand(ctx context.Context, script string, args []string) (*exec.Cmd, func(), error) {
 	tmpfile, err := os.OpenFile(os.TempDir()+"/coach"+xid.New().String()+".ps1", os.O_CREATE, 0600)
 	if err != nil {
 		return nil, nil, err
@@ -66,9 +75,9 @@ func (p *PowerShell) BuildCommand(script string, args []string) (*exec.Cmd, func
 		cleanup()
 		return nil, nil, err
 	}
-
-	cmdArgs := append([]string{tmpfile.Name()}, args...)
-	return exec.Command("PowerShell.exe", cmdArgs...), cleanup, nil
+	cmdArgs := append([]string{"-NoProfile", "-ExecutionPolicy", "Bypass", "-OutputFormat", "Text",
+		"-File", tmpfile.Name()}, args...)
+	return exec.CommandContext(ctx, "PowerShell.exe", cmdArgs...), cleanup, nil
 }
 
 func (p *PowerShell) LineComment() string {
@@ -81,7 +90,7 @@ func (p *PowerShell) FileExtension() string {
 
 type WindowsCMD struct{}
 
-func (c *WindowsCMD) BuildCommand(script string, args []string) (*exec.Cmd, func(), error) {
+func (c *WindowsCMD) BuildCommand(ctx context.Context, script string, args []string) (*exec.Cmd, func(), error) {
 	tmpfile, err := os.OpenFile(os.TempDir()+"/coach"+xid.New().String()+".bat", os.O_CREATE, 0600)
 	if err != nil {
 		return nil, nil, err
@@ -94,7 +103,7 @@ func (c *WindowsCMD) BuildCommand(script string, args []string) (*exec.Cmd, func
 		return nil, nil, err
 	}
 
-	return exec.Command(tmpfile.Name(), args...), cleanup, nil
+	return exec.CommandContext(ctx, tmpfile.Name(), args...), cleanup, nil
 }
 
 func (c *WindowsCMD) LineComment() string {

@@ -4,20 +4,23 @@
 package coach
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"os/user"
 	"path/filepath"
 	"strings"
 
 	"github.com/golang/protobuf/ptypes"
 	"github.com/rs/xid"
+	"github.com/spf13/viper"
 
-	"github.com/alittlebrighter/coach-pro/gen/models"
-	"github.com/alittlebrighter/coach-pro/platforms"
-	"github.com/alittlebrighter/coach-pro/storage/database"
+	models "github.com/alittlebrighter/coach/gen/proto"
+	"github.com/alittlebrighter/coach/platforms"
+	"github.com/alittlebrighter/coach/storage/database"
 )
 
 const Header = "exported from COACH - https://github.com/alittlebrighter/coach"
@@ -33,7 +36,8 @@ func QueryScripts(query string, store ScriptStore) (scripts []models.DocumentedS
 }
 
 func SaveScript(toSave models.DocumentedScript, overwrite bool, store ScriptStore) (err error) {
-	if toSave.GetScript() == nil || len(strings.TrimSpace(toSave.GetScript().GetContent())) == 0 {
+	if len(strings.TrimSpace(toSave.GetDocumentation())) == 0 &&
+		(toSave.GetScript() == nil || len(strings.TrimSpace(toSave.GetScript().GetContent())) == 0) {
 		return errors.New("no script to save")
 	}
 
@@ -82,7 +86,7 @@ func EditScript(alias string, store ScriptStore) (*models.DocumentedScript, erro
 			Id:     []byte(alias),
 			Alias:  alias,
 			Tags:   strings.Split(alias, "."),
-			Script: &models.Script{Shell: platforms.IdentifyShell()},
+			Script: &models.Script{Shell: viper.GetString("default_shell")},
 		}
 	}
 
@@ -117,7 +121,7 @@ func EditScript(alias string, store ScriptStore) (*models.DocumentedScript, erro
 		return nil, err
 	}
 
-	if err := Shell.OpenEditor(tmpfile.Name()); err != nil {
+	if err := platforms.OpenEditor(tmpfile.Name()); err != nil {
 		return nil, err
 	}
 	newContents, err := ioutil.ReadFile(tmpfile.Name())
@@ -126,27 +130,46 @@ func EditScript(alias string, store ScriptStore) (*models.DocumentedScript, erro
 	}
 
 	var newScript models.DocumentedScript
-	if newScript, err = UnmarshalEdit(string(newContents)); err != nil {
+	if newScript, err = UnmarshalEdit(string(newContents), script.GetScript().GetShell()); err != nil {
 		return nil, err
 	}
 
 	return &newScript, nil
 }
 
-func RunScript(script models.DocumentedScript, args []string) error {
+func RunScript(ctx context.Context, script models.DocumentedScript, args []string, configureIO func(*exec.Cmd) error) error {
 	shell := platforms.GetShell(script.GetScript().GetShell())
 
-	toRun, cleanup, err := shell.BuildCommand(script.GetScript().GetContent(), args)
+	toRun, cleanup, err := shell.BuildCommand(ctx, script.GetScript().GetContent(), args)
 	if cleanup != nil {
 		defer cleanup()
 	}
 	if err != nil {
 		return err
 	}
-	toRun.Stdin = os.Stdin
-	toRun.Stdout = os.Stdout
-	toRun.Stderr = os.Stderr
-	toRun.Run()
+	if err := configureIO(toRun); err != nil {
+		return err
+	}
+
+	err = toRun.Start()
+	if err != nil {
+		return err
+	}
+
+	result := make(chan error, 1)
+	go func() {
+		result <- toRun.Wait()
+	}()
+	select {
+	case err := <-result:
+		return err
+	case <-ctx.Done():
+		err := ctx.Err()
+		if ctx.Err() != nil {
+			platforms.KillProcess(toRun)
+		}
+		return err
+	}
 
 	return nil
 }
@@ -208,7 +231,7 @@ func MarshalEdit(s models.DocumentedScript) []byte {
 	return []byte(contents.String())
 }
 
-func UnmarshalEdit(contents string) (ds models.DocumentedScript, err error) {
+func UnmarshalEdit(contents, originalShell string) (ds models.DocumentedScript, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			err = errors.New("could not parse file")
@@ -218,6 +241,7 @@ func UnmarshalEdit(contents string) (ds models.DocumentedScript, err error) {
 	ds.Script = new(models.Script)
 
 	parts := strings.Split(contents, platforms.Newline(1))
+	shell := platforms.GetShell(originalShell)
 	var inDoc, docStarted, inScript, scriptStarted bool
 	for _, p := range parts {
 		part := strings.TrimSpace(p)
@@ -242,6 +266,9 @@ func UnmarshalEdit(contents string) (ds models.DocumentedScript, err error) {
 			inScript, scriptStarted = false, false
 		case strings.Contains(part, "-SHELL- ="):
 			ds.Script.Shell = strings.TrimSpace(strings.Split(part, "=")[1])
+			if len(originalShell) == 0 {
+				shell = platforms.GetShell(ds.Script.Shell)
+			}
 
 			inDoc, docStarted = false, false
 			inScript, scriptStarted = false, false
@@ -260,7 +287,7 @@ func UnmarshalEdit(contents string) (ds models.DocumentedScript, err error) {
 		}
 
 		if inDoc {
-			ds.Documentation += strings.TrimRight(strings.Replace(strings.TrimLeft(p, "/#"), " ", "", 1), "\t ") + platforms.Newline(1)
+			ds.Documentation += strings.TrimRight(strings.TrimLeft(p, shell.LineComment()), "\t\r\n ") + platforms.Newline(1)
 		} else if inScript {
 			ds.Script.Content += p + platforms.Newline(1)
 		}

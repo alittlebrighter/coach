@@ -7,8 +7,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/alittlebrighter/coach-pro"
-	"github.com/alittlebrighter/coach-pro/storage/database"
+	"github.com/alittlebrighter/coach"
+	"github.com/alittlebrighter/coach/storage/database"
 )
 
 var buildTimestamp string
