@@ -37,6 +37,11 @@ Until I get proper documentation up for now you can use the following:
 - `coach-grpc-server` - the `.proto` files that the gRPC service implements can be found in the `protobuf` directory.  There are some comments there but further documentation will be provided once I have an interface to plug in security components.
 - `coach-grpc-web` - documentation waiting on security components
 
+### Roadmap
+- interfaces to add authentication via Go plugins
+- authorization
+- interface to allow launching deeper analysis of command history
+
 ### Contributing
 
 1. Fork it
