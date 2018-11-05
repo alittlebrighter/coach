@@ -7,7 +7,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/alittlebrighter/coach"
+	"github.com/alittlebrighter/coach/config"
 	"github.com/alittlebrighter/coach/storage/database"
 )
 
@@ -16,16 +16,8 @@ var buildTimestamp string
 var home, dbpath string
 
 func main() {
-	/*
-		buildTime, _ := time.Parse(time.UnixDate, buildTimestamp)
-		if buildTime != time.Unix(0, 0) && buildTime.Before(time.Now().Add(-5*time.Minute)) {
-			fmt.Println("forbidden")
-			os.Exit(2)
-		}
-	*/
-
 	// Find home directory.
-	home = coach.HomeDir()
+	home = config.HomeDir()
 	os.Mkdir(home, os.ModePerm)
 	dbpath = home + "/coach.db"
 
