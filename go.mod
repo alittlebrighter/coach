@@ -1,0 +1,37 @@
+module github.com/alittlebrighter/coach
+
+require (
+	github.com/buger/jsonparser v0.0.0-20180318095312-2cac668e8456
+	github.com/coreos/bbolt v1.3.1-etcd.8
+	github.com/davecgh/go-spew v1.1.1
+	github.com/fsnotify/fsnotify v0.0.0-20170329110642-4da3e2cfbabc
+	github.com/gobuffalo/packr v1.13.7
+	github.com/golang/protobuf v1.2.0
+	github.com/gorilla/websocket v1.4.0
+	github.com/hashicorp/hcl v0.0.0-20170217164738-630949a3c5fa
+	github.com/inconshreveable/mousetrap v1.0.0
+	github.com/json-iterator/go v0.0.0-20180722035151-10a568c51178
+	github.com/magiconair/properties v0.0.0-20170113111004-b3b15ef068fd
+	github.com/mitchellh/go-homedir v0.0.0-20180523094522-3864e76763d9
+	github.com/mitchellh/mapstructure v0.0.0-20170125051937-db1efb556f84
+	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd
+	github.com/modern-go/reflect2 v0.0.0-20180701023420-4b7aa43c6742
+	github.com/pelletier/go-buffruneio v0.1.0
+	github.com/pelletier/go-toml v0.0.0-20170217012736-22139eb54690
+	github.com/pkg/errors v0.8.0
+	github.com/pmezard/go-difflib v1.0.0
+	github.com/rs/xid v0.0.0-20180530234414-513a561cfd69
+	github.com/spf13/afero v0.0.0-20170217164146-9be650865eab
+	github.com/spf13/cast v0.0.0-20170221152302-f820543c3592
+	github.com/spf13/cobra v0.0.3
+	github.com/spf13/jwalterweatherman v0.0.0-20170109133355-fa7ca7e836cf
+	github.com/spf13/pflag v1.0.2
+	github.com/spf13/viper v0.0.0-20170217163817-7538d73b4eb9
+	github.com/stretchr/testify v1.2.2
+	golang.org/x/net v0.0.0-20180921000356-2f5d2388922f
+	golang.org/x/sys v0.0.0-20180830151530-49385e6e1522
+	golang.org/x/text v0.3.0
+	google.golang.org/genproto v0.0.0-20180912233945-5a2fd4cab2d6
+	google.golang.org/grpc v1.15.0
+	gopkg.in/yaml.v2 v2.2.1
+)

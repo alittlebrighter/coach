@@ -23,6 +23,8 @@ func AppConfiguration() {
 
 	viper.AddConfigPath(HomeDir())
 	viper.SetConfigName("config")
+
+	viper.ReadInConfig()
 }
 
 func WriteConfiguration() {
