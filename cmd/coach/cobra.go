@@ -48,6 +48,7 @@ func main() {
 		Run:   history,
 	}
 	historyCmd.Flags().StringP("record", "r", "", "Record command.  With `bash` you can use \"$(history 1)\"")
+	historyCmd.Flags().StringP("query", "q", database.Wildcard, "Query command history by regex.")
 	historyCmd.Flags().BoolP("all", "a", false, "Retrieve history from all sessions")
 
 	docCmd := &cobra.Command{
