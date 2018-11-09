@@ -131,10 +131,11 @@ func exportScripts(dir string, store *database.BoltDB) {
 		allButLastDir := path
 		if lastSlash != -1 {
 			allButLastDir = path[:lastSlash]
-		}
-		for _, subdir := range strings.Split(allButLastDir, "/") {
-			fullPath += subdir + "/"
-			os.Mkdir(fullPath, 0700)
+
+			for _, subdir := range strings.Split(allButLastDir, "/") {
+				fullPath += subdir + "/"
+				os.Mkdir(fullPath, 0700)
+			}
 		}
 
 		file, err := os.OpenFile(path+"."+shell.FileExtension(), os.O_CREATE|os.O_RDWR, os.ModePerm)
