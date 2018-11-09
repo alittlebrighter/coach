@@ -36,6 +36,7 @@ func session(cmd *cobra.Command, args []string) {
 func history(cmd *cobra.Command, args []string) {
 	record, rErr := cmd.Flags().GetString("record")
 	all, _ := cmd.Flags().GetBool("all")
+	query, qErr := cmd.Flags().GetString("query")
 	hImport, _ := cmd.Flags().GetBool("import")
 
 	switch {
@@ -70,6 +71,17 @@ func history(cmd *cobra.Command, args []string) {
 		}
 
 		handleErr(coach.ImportHistory(store))
+	case qErr == nil && len(query) > 0:
+		store := coach.GetStore(false)
+		defer store.Close()
+
+		lines, err := coach.QueryHistory(query, all, store)
+		if err != nil {
+			handleErrExit(err, true)
+		}
+
+		printHistoryLines(lines, all)
+
 	default:
 		store := coach.GetStore(true)
 		defer store.Close()
@@ -88,18 +100,22 @@ func history(cmd *cobra.Command, args []string) {
 			break
 		}
 
-		for _, line := range lines {
-			id, err := xid.FromBytes(line.GetId())
-			if err != nil {
-				continue
-			}
-			if all {
-				fmt.Printf("%s %s@%s - %s\n", id.Time().Format(viper.GetString("timestamp_format")), line.User, line.GetTty(),
-					line.GetFullCommand())
-			} else {
-				fmt.Printf("%s - %s\n", id.Time().Format(viper.GetString("timestampFormat")),
-					line.GetFullCommand())
-			}
+		printHistoryLines(lines, all)
+	}
+}
+
+func printHistoryLines(lines []models.HistoryRecord, all bool) {
+	for _, line := range lines {
+		id, err := xid.FromBytes(line.GetId())
+		if err != nil {
+			continue
+		}
+		if all {
+			fmt.Printf("%s %s@%s - %s\n", id.Time().Format(viper.GetString("timestamp_format")), line.User, line.GetTty(),
+				line.GetFullCommand())
+		} else {
+			fmt.Printf("%s - %s\n", id.Time().Format(viper.GetString("timestampFormat")),
+				line.GetFullCommand())
 		}
 	}
 }

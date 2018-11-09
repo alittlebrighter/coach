@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"os/user"
+	"regexp"
 	"strings"
 
 	"github.com/golang/protobuf/ptypes"
@@ -144,11 +145,43 @@ func GetRecentHistory(n int, allSessions bool, store HistoryGetter) (lines []mod
 	return
 }
 
+func QueryHistory(regex string, all bool, store HistoryStore) (lines []models.HistoryRecord, err error) {
+	if len(regex) == 0 {
+		return GetRecentHistory(10, all, store)
+	}
+
+	var currentUser *user.User
+	currentUser, err = user.Current()
+	if err != nil {
+		return
+	}
+
+	re, err := regexp.Compile(regex)
+
+	unfiltered, err := store.QueryHistory(re, currentUser.Username, all)
+	if err != nil {
+		return
+	}
+	lines = []models.HistoryRecord{}
+	unique := make(map[string]struct{})
+	for _, line := range unfiltered {
+		if _, exists := unique[line.FullCommand]; exists {
+			continue
+		}
+
+		lines = append(lines, line)
+		unique[line.FullCommand] = struct{}{}
+	}
+
+	return
+}
+
 type HistoryStore interface {
 	Save(id []byte, value interface{}, overwrite bool) error
 	SaveBatch(<-chan database.HasID, []byte) <-chan error
 	CheckDupeCmds(string, int) bool
 	PruneHistory(max int) error
+	QueryHistory(regex *regexp.Regexp, user string, all bool) ([]models.HistoryRecord, error)
 	HistoryGetter
 	IgnoreChecker
 }

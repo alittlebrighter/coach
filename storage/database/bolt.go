@@ -5,6 +5,7 @@ package database
 
 import (
 	"errors"
+	"regexp"
 	"strings"
 	"time"
 
@@ -108,6 +109,38 @@ func (b *BoltDB) GetRecent(tty, username string, count int) ([]models.HistoryRec
 				}
 			}
 			if lineUser, err := jsonparser.GetUnsafeString(v, "user"); err != nil || lineUser != username {
+				continue
+			}
+
+			var line models.HistoryRecord
+			if err := json.Unmarshal(v, &line); err != nil {
+				continue
+			}
+
+			records = append([]models.HistoryRecord{line}, records...)
+		}
+
+		return nil
+	})
+
+	return records, nil
+}
+
+func (b *BoltDB) QueryHistory(regex *regexp.Regexp, username string, all bool) ([]models.HistoryRecord, error) {
+	records := []models.HistoryRecord{}
+	b.db.View(func(tx *bolt.Tx) error {
+		// Assume bucket exists and has keys
+		c := tx.Bucket(HistoryBucket).Cursor()
+
+		for k, v := c.Last(); k != nil; k, v = c.Prev() {
+			if !all {
+				if lineUser, err := jsonparser.GetUnsafeString(v, "user"); err != nil || lineUser != username {
+					continue
+				}
+			}
+
+			lineStr, err := jsonparser.GetUnsafeString(v, "fullCommand")
+			if err != nil || !regex.Match([]byte(lineStr)) {
 				continue
 			}
 
