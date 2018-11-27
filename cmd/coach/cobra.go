@@ -48,7 +48,7 @@ func main() {
 		Run:   history,
 	}
 	historyCmd.Flags().StringP("record", "r", "", "Record command.  With `bash` you can use \"$(history 1)\"")
-	historyCmd.Flags().StringP("query", "q", database.Wildcard, "Query command history by regex.")
+	historyCmd.Flags().StringP("query", "q", "", "Query command history by regex.")
 	historyCmd.Flags().BoolP("all", "a", false, "Retrieve history from all sessions")
 
 	docCmd := &cobra.Command{
@@ -99,13 +99,15 @@ func main() {
 
 	cobra.OnInitialize(initConfig)
 
-	defer func() {
-		if r := recover(); r != nil {
-			fmt.Println(r)
-			fmt.Printf("ERROR: Something went wrong.  Do you have permissions to access '%s' and its contents?\n", home)
-			os.Exit(1)
-		}
-	}()
+	/*
+		defer func() {
+			if r := recover(); r != nil {
+				fmt.Println(r)
+				fmt.Printf("ERROR: Something went wrong.  Do you have permissions to access '%s' and its contents?\n", home)
+				os.Exit(1)
+			}
+		}()
+	*/
 
 	if err := rootCmd.Execute(); err != nil {
 		handleErr(err)
@@ -127,4 +129,8 @@ func initConfig() {
 	viper.SetDefault("history.max_lines", 1000)
 	viper.SetDefault("history.reps_pre_doc_prompt", 3)
 	viper.SetDefault("timestamp_format", "01/02 03:04:05PM")
+
+	viper.ReadInConfig()
+
+	conf.WriteConfiguration()
 }

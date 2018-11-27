@@ -114,7 +114,7 @@ func printHistoryLines(lines []models.HistoryRecord, all bool) {
 			fmt.Printf("%s %s@%s - %s\n", id.Time().Format(viper.GetString("timestamp_format")), line.User, line.GetTty(),
 				line.GetFullCommand())
 		} else {
-			fmt.Printf("%s - %s\n", id.Time().Format(viper.GetString("timestampFormat")),
+			fmt.Printf("%s - %s\n", id.Time().Format(viper.GetString("timestamp_format")),
 				line.GetFullCommand())
 		}
 	}

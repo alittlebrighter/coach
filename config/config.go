@@ -18,13 +18,8 @@ const (
 func AppConfiguration() {
 	viper.SetTypeByDefaultValue(true)
 
-	viper.SetEnvPrefix(ENV_PREFIX)
-	viper.AutomaticEnv()
-
 	viper.AddConfigPath(HomeDir())
 	viper.SetConfigName("config")
-
-	viper.ReadInConfig()
 }
 
 func WriteConfiguration() {
