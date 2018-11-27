@@ -35,14 +35,13 @@ func importScripts(dir string, store *database.BoltDB) {
 		script, err := ParseFile(p, base, info.Size())
 		if err != nil {
 			handleErr(err)
-			return err
+			return nil
 		}
 		for err = coach.SaveScript(*script, false, store); err == database.ErrAlreadyExists; err = coach.SaveScript(*script, false, store) {
 			script.Alias += "-" + xid.New().String()
 		}
 		if err != nil {
 			handleErr(err)
-			return err
 		}
 
 		return nil
@@ -61,11 +60,18 @@ func ParseFile(path, base string, size int64) (*models.DocumentedScript, error) 
 	parts := strings.Split(path, ".")
 	if len(parts) < 2 {
 		ext = database.Wildcard
+	} else if len(parts[0]) == 0 {
+		return nil, errors.New("hidden file, skipping")
 	} else {
 		ext = parts[1]
 	}
 	fromBase := parts[0][strings.Index(parts[0], base):]
 	pathParts := strings.Split(fromBase, "/")
+	for _, p := range pathParts {
+		if strings.HasPrefix(p, `.`) {
+			return nil, errors.New("hidden file, skipping")
+		}
+	}
 	script.Alias = strings.Join(pathParts, ".")
 	script.Tags = pathParts
 	script.Script = &models.Script{Shell: platforms.ShellNameFromExt(ext)}
