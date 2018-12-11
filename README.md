@@ -18,14 +18,33 @@ There is currently no way to track command history in any other shell (I'm open 
 
 ### Usage
 Once you've started a new session just continue using your terminal as you normally would and `coach` will prompt you to save frequently run commands.
-![Terminal Usage](https://i.imgur.com/ear5FUW.jpg)
+
+```
+adam@devops-1:~/$ svcName=$(journalctl --since today | grep error \
+    | jq .service.name); systemctl restart $svcName
+'users-api' restarted
+...
+adam@devops-1:~/$ svcName=$(journalctl --since today | grep error \
+    | jq .service.name); systemctl restart $svcName
+'widget-svc' restarted
+...
+adam@devops-1:~/$ svcName=$(journalctl --since today | grep error \
+    | jq .service.name); systemctl restart $svcName
+'webhooks' restarted
+
+---
+This command has been used 3+ times.
+`coach lib [alias] [tags] [comment...]` to save and document this command.
+`coach ignore` to silence this output for this command.
+adam@devops-1:~/$ coach lib prod.findAndFix prod,services,restart Finds \
+    any services logging errors and restarts them.
+```
 
 To add more lines you can run:
 ```
-$ coach doc -e get-weather
+adam@devops-1:~/$ coach lib -e prod.findAndFix
 ```
 and `coach` will pull up your script along with its metadata inside of the editor specified by `$EDITOR`
-![Edit Script](https://i.imgur.com/QOUR1UY.png)
 Just save and quit to keep your changes in `coach`.
 
 Run `coach --help` to see other available options. 
@@ -36,11 +55,6 @@ Until I get proper documentation up for now you can use the following:
 - `coach` - run `coach --help` 
 - `coach-grpc-server` - the `.proto` files that the gRPC service implements can be found in the `protobuf` directory.  There are some comments there but further documentation will be provided once I have an interface to plug in security components.
 - `coach-grpc-web` - documentation waiting on security components
-
-### Roadmap
-- interfaces to add authentication via Go plugins
-- authorization
-- interface to allow launching deeper analysis of command history
 
 ### Contributing
 
